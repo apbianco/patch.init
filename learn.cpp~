@@ -1,0 +1,32 @@
+#include "daisy_seed.h"
+
+// Use the daisy namespace to prevent having to type
+// daisy:: before all libdaisy functions
+using namespace daisy;
+
+// Declare a DaisySeed object called hardware
+DaisySeed hardware;
+
+int main(void)
+{
+    bool led_state;
+    led_state = true;
+
+    hardware.Configure();
+    hardware.Init();
+    hardware.StartLog(true);
+
+    // Loop forever
+    for(;;)
+    {
+        // Set the onboard LED
+        hardware.SetLed(led_state);
+        System::Delay(100);
+        hardware.SetLed(false);
+        System::Delay(100);
+        hardware.SetLed(led_state);
+        led_state = !led_state;
+        System::Delay(500);
+        hardware.PrintLine("led_state=%d", led_state);
+    }
+}
