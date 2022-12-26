@@ -14,8 +14,16 @@ struct KnobCalibrationValues {
   float true_max;
 };
 
+KnobCalibrationValues kcv_[4] = {
+  {-0.01260, 0.46364, 0.99676},
+  {-0.01940, 0.46142, 0.99630},
+  {-0.01379, 0.46813, 0.99758},
+  {-0.01611, 0.46630, 0.99911}};
+
 class KnobValue {
 public:
+  KnobValue(int cv_index) : KnobValue(cv_index, kcv_[cv_index]) {}
+
   KnobValue(int cv_index, KnobCalibrationValues kcv, int factor=1000) :
     prev_(0.0f), cv_index_(cv_index),
     true_min_(kcv.true_min), true_med_(kcv.true_med),
@@ -95,18 +103,12 @@ private:
 
 int main(void)
 {
-  KnobCalibrationValues kcv[4] = {
-    {-0.01260, 0.46364, 0.99676},
-    {-0.01940, 0.46142, 0.99630},
-    {-0.01379, 0.46813, 0.99758},
-    {-0.01611, 0.46630, 0.99911}};
-      
   InitHardware(true);
   KnobValue kv[4] = {
-    KnobValue(CV_1, kcv[0]),
-    KnobValue(CV_2, kcv[1]),
-    KnobValue(CV_3, kcv[2]),
-    KnobValue(CV_4, kcv[3]),
+    KnobValue(CV_1),
+    KnobValue(CV_2),
+    KnobValue(CV_3),
+    KnobValue(CV_4),
   };
 
   while(true) {
