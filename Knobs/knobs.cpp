@@ -2,42 +2,51 @@
 #include <daisysp.h>
 #include <daisy.h>
 
+#include "util.h"
+
 using namespace daisy;
 using namespace patch_sm;
 using namespace daisysp;
 
-DaisyPatchSM dpsm;
-
-#define PRECISION 10000.0
-
-#define F2I(f) static_cast<int>(PRECISION * f)
-#define I2F(i) static_cast<float>(i / PRECISION)
-
 class KnobValue {
 public:
-  KnobValue(int cv_index, float min_value, float max_value) :
-    prev_(0.0f),
-    threshold_(min_value),
-    factor_(1/(max_value - min_value)) {
-    assert (max_value - min_value != 0.0);
-    cv_index_ = cv_index;
-    prev_ = GetValue();
+  KnobValue(int cv_index,
+	    float true_min, float true_max, int factor=1000) :
+    prev_(0.0f), cv_index_(cv_index),
+    true_min_(true_min),
+    correction_(1.0f/(true_max - true_min)),
+    calibrate_min_(10.0), calibrate_max_(-10.0),
+    factor_(factor), debug_(false) {
+    prev_ = CalibratedValue(GetValue());
   }
 
+  void SetDebug() { debug_ = true; }
+
   void Calibrate() {
-    dpsm.PrintLine("CV_%d: %d", cv_index_+1, F2I(GetRawValue()));
+    float value = GetValue();
+    if (value < calibrate_min_) {
+      calibrate_min_ = value;
+    }
+    if (value > calibrate_max_) {
+      calibrate_max_ = value;
+    }
+    LOG_INFO("CV_%d: min=%s", cv_index_+1, f2a(calibrate_min_));
+    LOG_INFO("CV_%d: max=%s", cv_index_+1, f2a(calibrate_max_));
   }
   
   bool CaptureValueIndicateChange(float *new_value) {
-    *new_value = GetValue();
-    int new_int_value = F2I(*new_value);
-    if (new_int_value < 0) {
-      new_int_value = 0;
-      *new_value = 0.0;
+    float fvalue = CalibratedValue(GetValue());
+    int value = static_cast<int>(fvalue * factor_);
+    int prev = static_cast<int>(prev_ * factor_);
+    if (debug_) {
+      LOG_INFO("fvalue=%s prev_=%s value=%d prev=%d",
+	       f2a(fvalue), f2a(prev_), value, prev);
     }
-    int delta = new_int_value - F2I(prev_);
-    if (delta <= -2 || delta >= 2) {
-      prev_ = *new_value;
+    if (value != prev) {
+      if (debug_) {
+	LOG_INFO("Found different: %d/%d", value, prev);
+      }
+      *new_value = prev_ = fvalue;
       return true;
     }
     return false;
@@ -46,44 +55,47 @@ public:
   void PrintIfChange() {
     float value;
     if (CaptureValueIndicateChange(&value)) {
-      Print();
+      PrintCalibrated();
     }
   }
 
-  void Print() {
-    dpsm.PrintLine("// CV_%d: %d", cv_index_+1, F2I(prev_));
+  void PrintCalibrated() {
+    LOG_INFO("CV_%d: %d", cv_index_+1,
+	     static_cast<int>(prev_ * factor_));
   }
   
 private:
   float prev_;
-  float threshold_;
-  float factor_;
   int cv_index_;
 
-  float GetRawValue() {
-    dpsm.ProcessAnalogControls();
-    return dpsm.GetAdcValue(cv_index_);
-  }
+  float true_min_, correction_;
+  float calibrate_min_, calibrate_max_;
+
+  int factor_;
+
+  bool debug_;
 
   float GetValue() {
-    return (GetRawValue() - threshold_) * factor_;
+    GetHardware()->ProcessAnalogControls();
+    return GetHardware()->GetAdcValue(cv_index_);
+  }
+
+  float CalibratedValue(float f) {
+    return (f - true_min_)*correction_;
   }
 };
 
 int main(void)
 {
-  dpsm.Init();
-  dpsm.StartLog(true);		// Wait for the terminal connection
-  dpsm.PrintLine("// Started...");
-
-  KnobValue kv(CV_2, I2F(-192), I2F(9961));
+  InitHardware(true);
+  KnobValue kv(CV_2, -0.01940, 0.99630);
 
   while(true) {
-    float f;
-    if (kv.CaptureValueIndicateChange(&f)) {
-      dpsm.WriteCvOut(CV_OUT_2, f*5.0);
-      kv.Print();
-    }
+#if 0
+    kv.PrintIfChange();
+#else
+    kv.Calibrate();
+#endif    
     System::Delay(10);
   }
 }
