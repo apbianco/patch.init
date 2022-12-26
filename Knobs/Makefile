@@ -16,4 +16,5 @@ SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 include $(SYSTEM_FILES_DIR)/Makefile
 
 override CPPFLAGS += -DLOG_ON
+override CFLAGS += -Werror
 
