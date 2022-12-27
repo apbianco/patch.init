@@ -1,16 +1,14 @@
 #include <daisy_patch_sm.h>
-#include <daisysp.h>
 #include <daisy.h>
 
 #include "util.h"
 
 using namespace daisy;
 using namespace patch_sm;
-using namespace daisysp;
 
 class RadioButton {
 public:
-  enum State {
+  enum StateValue {
     OFF,
     ON,
   };
@@ -19,7 +17,12 @@ public:
     CHANGED,
     RELEASED,
   };
-  RadioButton() : state_(OFF), just_changed_(false),
+  struct State {
+    State() : state(OFF), long_press(false) {}
+    StateValue state;
+    bool long_press;
+  };
+  RadioButton() : state_(OFF), internal_led_state_(OFF), just_changed_(false),
 		  internal_state_(RELEASED),
 		  long_press_(false),
 		  long_press_delay_ms_(1000.0), time_pressed_ms_(0.0),
@@ -29,7 +32,7 @@ public:
 
   void SetDebug() { debug_ = true; }
   
-  State UpdateState() {
+  void UpdateState() {
     switch_.Debounce();
     switch (internal_state_) {
     case RELEASED:
@@ -40,7 +43,7 @@ public:
     case WAITING:
       if (switch_.Pressed()) {
 	time_pressed_ms_ = switch_.TimeHeldMs();
-	if (time_pressed_ms_ > 10.0) {
+	if (switch_.TimeHeldMs() > 10.0) {
 	  internal_state_ = CHANGED;
 	}
       } else {
@@ -50,9 +53,18 @@ public:
     case CHANGED:
       if (switch_.Pressed()) {
 	time_pressed_ms_ = switch_.TimeHeldMs();
+	// If we're getting into a long press, blink the LED every 20
+	// cycles to indicate that.
+	if (time_pressed_ms_  > long_press_delay_ms_) {
+	  if (static_cast<int>(time_pressed_ms_) % 20 == 0) {
+	    internal_led_state_ = internal_led_state_ == OFF ? ON : OFF;
+	  }
+	  GetHardware()->WriteCvOut(CV_OUT_2,
+				    internal_led_state_ == ON ? 2.5 : 0.0);
+	}
       } else {
 	internal_state_ = RELEASED;
-	state_ = (state_ == ON ? OFF : ON);
+	state_ = state_ == ON ? OFF : ON;
 	just_changed_ = true;
 	if (time_pressed_ms_  > long_press_delay_ms_) {
 	  long_press_ = true;
@@ -65,27 +77,28 @@ public:
       LOG_INFO("state: %d, internal_state: %d, long_press: %d",
 	       state_, internal_state_, long_press_);
     }
-    return state_;
   }
 
-  State GetState() { return state_; }
-
-  void PrintIfChanged() {
+  bool GetStateIfChanged(State *v) {
     if (just_changed_ || long_press_) {
-      Print();
+      v->state = state_;
+      v->long_press = long_press_;
       just_changed_ = false;
       long_press_ = false;
+      return true;
     }
+    return false;
   }
-  
-  void Print() {
+
+  void PrintState(const State& s) {
     LOG_INFO("State: %s, long Press: %s",
-	     state_ == ON ? "On" : "Off", long_press_ ? "Yes" : "No");
+	     s.state == ON ? "On" : "Off", s.long_press ? "Yes" : "No");
   }
   
 private:
   Switch switch_;
-  State state_;
+  StateValue state_;
+  StateValue internal_led_state_;
   bool just_changed_;
   InternalState internal_state_;
   bool long_press_;
@@ -101,8 +114,11 @@ int main(void)
   RadioButton radio;
   // radio.SetDebug();
   while(true) {
+    RadioButton::State s;
     radio.UpdateState();
-    radio.PrintIfChanged();
+    if (radio.GetStateIfChanged(&s)) {
+      radio.PrintState(s);
+    }
     System::Delay(2);
   }
 }
