@@ -18,7 +18,7 @@ void InitHardware(bool debug) {
   if (debug) {
     hw_.StartLog(true);
   }
-  LOG_INFO("Started...");
+  LOG_INFO("Hardware started...");
 }
 
 DaisyPatchSM *GetHardware() {
