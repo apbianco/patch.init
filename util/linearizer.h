@@ -11,6 +11,12 @@
 
 #include "util.h"
 
+struct LinearCalibrationValues {
+  float true_min;
+  float true_med;
+  float true_max;
+};
+
 class Linearizer {
 public:
   Linearizer(float s, float e, float S, float E) :

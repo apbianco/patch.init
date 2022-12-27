@@ -9,13 +9,7 @@ using namespace daisy;
 using namespace patch_sm;
 using namespace daisysp;
 
-struct KnobCalibrationValues {
-  float true_min;
-  float true_med;
-  float true_max;
-};
-
-KnobCalibrationValues kcv_[4] = {
+LinearCalibrationValues kcv_[4] = {
   {-0.01260, 0.46364, 0.99676},
   {-0.01940, 0.46142, 0.99630},
   {-0.01379, 0.46813, 0.99758},
@@ -25,7 +19,7 @@ class KnobValue {
 public:
   KnobValue(int cv_index) : KnobValue(cv_index, kcv_[cv_index]) {}
 
-  KnobValue(int cv_index, KnobCalibrationValues kcv, int factor=1000) :
+  KnobValue(int cv_index, LinearCalibrationValues kcv, int factor=1000) :
     prev_(0.0f), cv_index_(cv_index),
     l1_(Linearizer(kcv.true_min, kcv.true_med, 0.0f, 0.5f)),
     l2_(Linearizer(kcv.true_med, kcv.true_max, 0.5f, 1.0f)),
