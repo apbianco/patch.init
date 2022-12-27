@@ -13,13 +13,13 @@
 
 class Linearizer {
 public:
-  Linearizer(float s, float e, float S, float E, float factor) :
-    a_((S-E)/(s-e)), b_(0.5 * ((S+E) - a_ * (s+e))), factor_(factor) {}
+  Linearizer(float s, float e, float S, float E) :
+    a_((S-E)/(s-e)), b_(0.5 * ((S+E) - a_ * (s+e))) {}
   
-  float Linearize(float x) { return factor_ * (a_*x + b_); }
+  float Linearize(float x) { return (a_*x + b_); }
   
   void Print() {
-    LOG_INFO("a=%s, b=%s, factor=%s", f2a(a_), f2a(b_), f2a(factor_));
+    LOG_INFO("a=%s, b=%s", f2a(a_), f2a(b_));
   }
    
  private:

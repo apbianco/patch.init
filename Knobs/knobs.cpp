@@ -27,15 +27,22 @@ public:
 
   KnobValue(int cv_index, KnobCalibrationValues kcv, int factor=1000) :
     prev_(0.0f), cv_index_(cv_index),
-    true_min_(kcv.true_min), true_med_(kcv.true_med),
-    correction_low_(0.5f/(kcv.true_med - kcv.true_min)),
-    correction_high_(0.5f/(kcv.true_max - kcv.true_med)),
+    l1_(Linearizer(kcv.true_min, kcv.true_med, 0.0f, 0.5f)),
+    l2_(Linearizer(kcv.true_med, kcv.true_max, 0.5f, 1.0f)),
+    true_med_(kcv.true_med),
+    factor_(factor),
     calibrate_min_(10.0), calibrate_max_(-10.0),
-    factor_(factor), debug_(false) {
+    debug_(false) {
     prev_ = CalibratedValue(GetValue());
   }
 
-  void SetDebug() { debug_ = true; }
+  void SetDebug() {
+    debug_ = true;
+    LOG_INFO("L1:");
+    l1_.Print();
+    LOG_INFO("L2:");
+    l2_.Print();
+  }
 
   void Calibrate() {
     float value = GetValue();
@@ -79,13 +86,10 @@ public:
 private:
   float prev_;
   int cv_index_;
-
-  float true_min_, true_med_;
-  float correction_low_, correction_high_;
-  float calibrate_min_, calibrate_max_;
-
+  Linearizer l1_, l2_;
+  float true_med_;
   int factor_;
-
+  float calibrate_min_, calibrate_max_;
   bool debug_;
 
   float GetValue() {
@@ -94,10 +98,10 @@ private:
   }
 
   float CalibratedValue(float f) {
-    if (f < true_med_) {
-      return (f - true_min_)*correction_low_;
+    if (f <= true_med_) {
+      return l1_.Linearize(f);
     } else {
-      return 0.5 + (f - true_med_)*correction_high_;
+      return l2_.Linearize(f);
     }
   }
 };
