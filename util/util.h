@@ -1,13 +1,16 @@
+// Utility functions to:
+//
+// - Initialize the hardware and access the hardware global variable
+// - Convert float string
+// - Log info, warning or error (conditionally compiled)
+
 #ifndef UTIL_H
 #define UTIL_H
 
 #include <daisy_patch_sm.h>
-#include <daisysp.h>
-#include <daisy.h>
 
 using namespace daisy;
 using namespace patch_sm;
-using namespace daisysp;
 
 // Precision used to print floats
 #define FLOAT_PRECISION 5
