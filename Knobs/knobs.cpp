@@ -3,6 +3,7 @@
 #include <daisy.h>
 
 #include "util.h"
+#include "linearizer.h"
 
 using namespace daisy;
 using namespace patch_sm;
