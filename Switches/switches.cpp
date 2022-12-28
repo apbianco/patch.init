@@ -14,13 +14,11 @@ int main(void)
   l.SetVoltage(1.5);
   OnOffPushButton button;
   button.SetLED(&l);
-  // button.SetDebug();
   while(true) {
     OnOffPushButton::State s;
-    button.UpdateState();
     if (button.GetStateIfChanged(&s)) {
       button.PrintState(s);
     }
-    System::Delay(2);
+    System::Delay(0);
   }
 }

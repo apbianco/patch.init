@@ -16,10 +16,13 @@ public:
     RELEASED,
   };
   struct State {
-    State() : state(OFF), long_press(false) {}
+    State(StateValue state, bool long_press):
+      state(state), long_press(long_press) {}
+    State() : State(OFF, false) {}
     StateValue state;
     bool long_press;
   };
+  
   OnOffPushButton() :
     state_(OFF), internal_led_state_(OFF), just_changed_(false),
     internal_state_(RELEASED),
@@ -33,6 +36,7 @@ public:
     led_ = led;
     led_->MemorizeVoltage();
   }
+
   void SetDebug() { debug_ = true; }
   
   void UpdateState() {
@@ -80,13 +84,10 @@ public:
       }
       break;
     }
-    if (debug_) {
-      LOG_INFO("state: %d, internal_state: %d, long_press: %d",
-	       state_, internal_state_, long_press_);
-    }
   }
 
   bool GetStateIfChanged(State *v) {
+    UpdateState();
     if (just_changed_ || long_press_) {
       v->state = state_;
       v->long_press = long_press_;
@@ -98,8 +99,13 @@ public:
   }
 
   void PrintState(const State& s) {
-    LOG_INFO("State: %s, long Press: %s",
-	     s.state == ON ? "On" : "Off", s.long_press ? "Yes" : "No");
+    LOG_INFO("State: %s, long press: %s",
+	     StateValueToString(s.state), s.long_press ? "Yes" : "No");
+  }
+
+  void Print() {
+    LOG_INFO("Button: state: %s, long press: %s",
+	     StateValueToString(state_), long_press_ ? "Yes" : "No");
   }
   
 private:
@@ -113,6 +119,50 @@ private:
   float time_pressed_ms_;
   LED *led_;
   bool debug_;
+
+  void LogDebug(const char *prefix) {
+    if (debug_) {
+      FB(b1); FB(b2);
+      LOG_INFO(
+        "OnOffPushButton: %s: "
+	"state: %s, "
+	"internal_led_state: %s, "
+	"just_changed: %d",
+	prefix,
+	StateValueToString(state_),
+	StateValueToString(internal_led_state_),
+	just_changed_);
+      LOG_INFO(
+        "  internal_state: %s, "
+	"long_press: %d, "
+	"long_press_delay_ms: %s, "
+	"time_pressed_ms: %s",
+	InternalStateToString(internal_state_),
+	long_press_,
+	f2a(long_press_delay_ms_, b1),
+	f2a(time_pressed_ms_, b2));
+    }
+  }
+
+  const char *StateValueToString(StateValue v) {
+    return v == ON ? "On" : "Off";
+  }
+
+  const char *InternalStateToString(InternalState s) {
+    switch(s) {
+    case WAITING:
+      return "WAITING";
+      break;
+    case CHANGED:
+      return "CHANGED";
+      break;
+    case RELEASED:
+      return "RELEASED";
+      break;
+    }
+    return "???";
+  }
+
 };
 
 #endif //  PUSH_BUTTON_H
