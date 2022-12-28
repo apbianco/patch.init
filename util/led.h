@@ -11,7 +11,7 @@ class LED {
 public:
   LED() : LED(0.0, 5.0) {}
   LED(float v_min, float v_max) :
-    current_voltage_(0.0f),
+    v_max_(v_max), current_voltage_(0.0f),
     memorized_current_voltage_(0.0f),
     l_(Transcaler(v_min, v_max, 1.50, 2.83)) {
     SetVoltage(current_voltage_);
@@ -36,6 +36,17 @@ public:
     return memorized_current_voltage_;
   }
 
+  void Blink(int n, float delay=250) {
+    MemorizeVoltage();
+    while(n--) {
+      SetVoltage(v_max_);
+      System::Delay(delay);
+      SetVoltage(0.0f);
+      System::Delay(delay);
+    }
+    RestoreMemorizedVoltage();
+  }
+
   void Print() {
     FB(b1); FB(b2);
     LOG_INFO("LED: current_voltage_: %s, memorized_current_voltage_: %s",
@@ -44,6 +55,7 @@ public:
   }
   
  private:
+  float v_max_;
   float current_voltage_;
   float memorized_current_voltage_;
   Transcaler l_;
