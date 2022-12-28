@@ -2,7 +2,7 @@
 #include <daisy.h>
 
 #include "util.h"
-#include "visible_led.h"
+#include "led.h"
 
 using namespace daisy;
 using namespace patch_sm;
@@ -32,7 +32,7 @@ public:
     switch_.Init(GetHardware()->B7);
   }
 
-  void SetLED(VisibleLED *led) {
+  void SetLED(LED *led) {
     led_ = led;
     led_->MemorizeVoltage();
   }
@@ -114,7 +114,7 @@ private:
   bool long_press_;
   float long_press_delay_ms_;
   float time_pressed_ms_;
-  VisibleLED *led_;
+  LED *led_;
   bool debug_;
 };
 
@@ -122,7 +122,7 @@ int main(void)
 {
   InitHardware(true);
 
-  VisibleLED l;
+  LED l;
   l.SetVoltage(1.5);
   RadioButton radio;
   radio.SetLED(&l);

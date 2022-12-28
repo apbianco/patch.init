@@ -1,9 +1,9 @@
 #include <daisy_patch_sm.h>
 #include <daisy.h>
 
-#include "control_voltage.h"
+#include "cv.h"
 #include "knobs.h"
-#include "visible_led.h"
+#include "led.h"
 
 using namespace daisy;
 using namespace patch_sm;

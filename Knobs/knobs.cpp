@@ -2,8 +2,6 @@
 #include <daisysp.h>
 #include <daisy.h>
 
-#include "util.h"
-#include "linearizer.h"
 #include "knobs.h"
 
 using namespace daisy;
