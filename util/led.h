@@ -1,29 +1,29 @@
-#ifndef VISIBLE_LED_H
-#define VISIBLE_LED_H
+#ifndef LED_H
+#define LED_H
 
-#include "linearizer.h"
+#include "transcaler.h"
 
 // The linearizer maps an input range to a voltage output range that
 // make the light coming out of the LED visibly changing throughout
 // the range. Otherwise, some values of the range don't really light
 // up the LED.
-class VisibleLED {
+class LED {
 public:
-  VisibleLED() : VisibleLED(0.0, 5.0) {}
-  VisibleLED(float v_min, float v_max) :
+  LED() : LED(0.0, 5.0) {}
+  LED(float v_min, float v_max) :
     current_voltage_(0.0f),
     memorized_current_voltage_(0.0f),
-    l_(Linearizer(v_min, v_max, 1.50, 2.83)) {
+    l_(Transcaler(v_min, v_max, 1.50, 2.83)) {
     SetVoltage(current_voltage_);
   }
   
-  ~VisibleLED() {
+  ~LED() {
     RestoreMemorizedVoltage();
   }
   
   void SetVoltage(float v) {
     current_voltage_ = v;
-    GetHardware()->WriteCvOut(CV_OUT_2, l_.Linearize(v));
+    GetHardware()->WriteCvOut(CV_OUT_2, l_.Transcale(v));
   }
 
   float MemorizeVoltage() {
@@ -46,7 +46,7 @@ public:
  private:
   float current_voltage_;
   float memorized_current_voltage_;
-  Linearizer l_;
+  Transcaler l_;
 };
 
-#endif  // VISIBLE_LED_H
+#endif  // LED_H
