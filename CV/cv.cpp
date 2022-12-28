@@ -18,22 +18,18 @@ LinearCalibrationValues kcv_[4] = {
 int main(void)
 {
   InitHardware(true);
-  CVIn cv(CV_8, kcv_[3]);
   CVOut cv_out;
-  // Create an LED that is going to react to -5.9/5.0 V
-  VisibleLED led(0.0, 1.0);
-  cv_out.SetDebug();
-  Knob k(CV_1);
+  Knob k(CV_1, kcv_[0]);
   
   while(true) {
-    float f = 0.0f;
-    if (k.CaptureValueIndicateChange(&f)) {
-      k.Print();
+    k.PrintIfChange();
+    float f = k.GetCalibratedScaledValue();
+    if (f <= 0.0f) {
+      f = 1.0f;
     }
-    f += 1.0f;
     cv_out.SetVoltage(0.0);
-    System::Delay(1/f);
+    System::Delay(f);
     cv_out.SetVoltage(5.0);
-    System::Delay(1/f);
+    System::Delay(f);
   }
 }
