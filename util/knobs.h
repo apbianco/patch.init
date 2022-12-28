@@ -37,24 +37,20 @@ using namespace patch_sm;
 //
 // - GetCalibratedValue(): read the calibrated current raw value.
 
-class Knob {
+class CV_ {
 public:
-  // Basic: perfect CV: min/mid/max have ideal values normalized
-  // values.
-  Knob(int cv_index) : Knob(cv_index, {0, 0.5, 1.0}) {}
-  
-  // Corrected CV: corrected with two correction segments.
-  Knob(int cv_index, LinearCalibrationValues kcv, int factor=1000) :
+  // Basic CV corrected with two correction segments.
+  CV_(int cv_index, int factor=1000) :
     cv_index_(cv_index),
     factor_(factor),
     last_(0.0f),
-    l1_(Linearizer(kcv.true_min, kcv.true_med, 0.0f, 0.5f)),
-    l2_(Linearizer(kcv.true_med, kcv.true_max, 0.5f, 1.0f)),
-    true_med_(kcv.true_med),
+    l1_(Linearizer(0.0f, 0.5f, 0.0f, 0.5f)),
+    l2_(Linearizer(0.5f, 1.0f, 0.5f, 1.0f)),
+    true_med_(0.5f),
     debug_(false) {
     last_ = CalibrateValue(GetRawValue());
   }
-  virtual ~Knob() = default;
+  virtual ~CV_() = default;
 
   void SetDebug() {
     debug_ = true;
@@ -120,9 +116,9 @@ protected:
   int factor_;			// Factor that brings input to an integer
   float last_;			// Last value read
   Linearizer l1_, l2_;		// Two linearizing segments
+  float true_med_;		// value < true_med_: use l1_, l2_ otherwise.
   
 private:
-  float true_med_;		// value < true_med_: use l1_, l2_ otherwise.
   bool debug_;			// Control printing additional info.
 
   float CalibrateValue(float f) {
@@ -133,5 +129,33 @@ private:
     }
   }
 };
+
+class Knob : public CV_ {
+public:
+  Knob(int cv_index, LinearCalibrationValues kcv, int factor=1000) :
+    CV_(cv_index, factor) {
+      l1_ = Linearizer(kcv.true_min, kcv.true_med, 0.0f, 0.5f);
+      l2_ = Linearizer(kcv.true_med, kcv.true_max, 0.5f, 1.0f);
+      true_med_ = kcv.true_med;
+    }
+};
+
+// Direct constructor for the knobs 1 to 4, properly compensated
+
+Knob CreateKnob1() {
+  return Knob(CV_1, {-0.01260, 0.46364, 0.99676});
+}
+
+Knob CreateKnob2() {
+  return Knob(CV_2, {-0.01940, 0.46142, 0.99630});
+}
+
+Knob CreateKnob3() {
+  return Knob(CV_3, {-0.01379, 0.46813, 0.99758});
+}
+
+Knob CreateKnob4() {
+  return Knob(CV_4, {-0.01611, 0.46630, 0.99911});
+}
 
 #endif  // KNOB_H

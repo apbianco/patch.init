@@ -3,10 +3,10 @@
 
 #include "knobs.h"
 
-class CVIn : public Knob {
+class CVIn : public CV_ {
  public:
  CVIn(int cv_index, LinearCalibrationValues kcv, int factor=1000) :
-  Knob(cv_index, kcv, factor) {
+  CV_(cv_index, factor) {
     l1_ = Linearizer(kcv.true_min, kcv.true_med, -5.0f, 0.0f);
     l2_ = Linearizer(kcv.true_med, kcv.true_max, 0.0f, 5.0f);
   }
