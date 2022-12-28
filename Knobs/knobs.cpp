@@ -19,21 +19,17 @@ LinearCalibrationValues kcv_[4] = {
 int main(void)
 {
   InitHardware(true);
-  KnobValue kv[4] = {
-    KnobValue(CV_1, kcv_[0]),
-    KnobValue(CV_2, kcv_[1]),
-    KnobValue(CV_3, kcv_[2]),
-    KnobValue(CV_4, kcv_[3]),
+  Knob kv[4] = {
+    Knob(CV_1, kcv_[0]),
+    Knob(CV_2, kcv_[1]),
+    Knob(CV_3, kcv_[2]),
+    Knob(CV_4, kcv_[3]),
   };
 
   while(true) {
-#if 1
     for (int i = 0; i < 4; i++) {
       kv[i].PrintIfChange();
     }
-#else
-    kv.Calibrate();
-#endif    
     System::Delay(10);
   }
 }
