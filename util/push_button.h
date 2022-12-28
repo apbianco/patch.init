@@ -61,10 +61,10 @@ public:
       if (switch_.Pressed()) {
 	time_pressed_ms_ = switch_.TimeHeldMs();
 	// If we're getting into a long press and if we've chosen to,
-	// blink the LED every 20 cycles to indicate that.
+	// blink the LED to indicate that.
 	if (led_ != nullptr) {
 	  if (time_pressed_ms_  > long_press_delay_ms_) {
-	    if (static_cast<int>(time_pressed_ms_) % 20 == 0) {
+	    if (static_cast<int>(time_pressed_ms_) % 50 == 0) {
 	      internal_led_state_ = internal_led_state_ == OFF ? ON : OFF;
 	      led_->SetVoltage(internal_led_state_ == ON ? 2.5 : 0.0);
 	    }
