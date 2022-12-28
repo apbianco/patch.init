@@ -57,4 +57,14 @@ void LOG_ERROR(const char *format, VA... va) {
   LOG_(format, "** ", va...);
 }
 
+template <typename... VA>
+void LOG_EVERY_MS_INFO(size_t delay_ms, const char *format, VA... va) {
+  static uint32_t last = System::GetNow();
+  uint32_t now = System::GetNow();
+  if (now - last > delay_ms) {
+    last = now;
+    LOG_INFO(format, va...);
+  }
+}
+
 #endif
