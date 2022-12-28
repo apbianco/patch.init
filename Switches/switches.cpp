@@ -65,7 +65,7 @@ public:
 	  if (time_pressed_ms_  > long_press_delay_ms_) {
 	    if (static_cast<int>(time_pressed_ms_) % 20 == 0) {
 	      internal_led_state_ = internal_led_state_ == OFF ? ON : OFF;
-	      led_->SetVoltage(internal_led_state_ == ON ? 5.0 : 0.0);
+	      led_->SetVoltage(internal_led_state_ == ON ? 2.5 : 0.0);
 	    }
 	  }
 	}

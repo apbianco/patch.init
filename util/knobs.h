@@ -111,6 +111,10 @@ public:
     return CalibrateValue(GetRawValue());
   }
 
+  float GetCalibratedScaledValue() {
+    return GetCalibratedValue() * factor_;
+  }
+
 protected:
   int cv_index_;	        // The device index
   int factor_;			// Factor that brings input to an integer
