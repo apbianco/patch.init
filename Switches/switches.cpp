@@ -2,6 +2,7 @@
 #include <daisy.h>
 
 #include "util.h"
+#include "visible_led.h"
 
 using namespace daisy;
 using namespace patch_sm;
@@ -26,10 +27,15 @@ public:
 		  internal_state_(RELEASED),
 		  long_press_(false),
 		  long_press_delay_ms_(1000.0), time_pressed_ms_(0.0),
+		  led_(nullptr),
 		  debug_(false) {
     switch_.Init(GetHardware()->B7);
   }
 
+  void SetLED(VisibleLED *led) {
+    led_ = led;
+    led_->MemorizeVoltage();
+  }
   void SetDebug() { debug_ = true; }
   
   void UpdateState() {
@@ -53,14 +59,15 @@ public:
     case CHANGED:
       if (switch_.Pressed()) {
 	time_pressed_ms_ = switch_.TimeHeldMs();
-	// If we're getting into a long press, blink the LED every 20
-	// cycles to indicate that.
-	if (time_pressed_ms_  > long_press_delay_ms_) {
-	  if (static_cast<int>(time_pressed_ms_) % 20 == 0) {
-	    internal_led_state_ = internal_led_state_ == OFF ? ON : OFF;
+	// If we're getting into a long press and if we've chosen to,
+	// blink the LED every 20 cycles to indicate that.
+	if (led_ != nullptr) {
+	  if (time_pressed_ms_  > long_press_delay_ms_) {
+	    if (static_cast<int>(time_pressed_ms_) % 20 == 0) {
+	      internal_led_state_ = internal_led_state_ == OFF ? ON : OFF;
+	      led_->SetVoltage(internal_led_state_ == ON ? 5.0 : 0.0);
+	    }
 	  }
-	  GetHardware()->WriteCvOut(CV_OUT_2,
-				    internal_led_state_ == ON ? 2.5 : 0.0);
 	}
       } else {
 	internal_state_ = RELEASED;
@@ -70,6 +77,9 @@ public:
 	  long_press_ = true;
 	}
 	time_pressed_ms_ = 0.0;
+	if (led_ != nullptr) {
+	  led_->RestoreMemorizedVoltage();
+	}
       }
       break;
     }
@@ -104,6 +114,7 @@ private:
   bool long_press_;
   float long_press_delay_ms_;
   float time_pressed_ms_;
+  VisibleLED *led_;
   bool debug_;
 };
 
@@ -111,7 +122,10 @@ int main(void)
 {
   InitHardware(true);
 
+  VisibleLED l;
+  l.SetVoltage(1.5);
   RadioButton radio;
+  radio.SetLED(&l);
   // radio.SetDebug();
   while(true) {
     RadioButton::State s;
