@@ -1,8 +1,9 @@
 #include <daisy_patch_sm.h>
 #include <daisy.h>
 
-#include "util.h"
 #include "control_voltage.h"
+#include "knobs.h"
+#include "visible_led.h"
 
 using namespace daisy;
 using namespace patch_sm;
@@ -18,17 +19,21 @@ int main(void)
 {
   InitHardware(true);
   CVIn cv(CV_8, kcv_[3]);
-  Linearizer l_led(-5, 5.0, 1.64, 2.83);
+  CVOut cv_out;
+  // Create an LED that is going to react to -5.9/5.0 V
+  VisibleLED led(0.0, 1.0);
+  cv_out.SetDebug();
+  Knob k(CV_1);
   
   while(true) {
-#if 1
-    float v;
-    if (cv.CaptureValueIndicateChange(&v)) {
-      GetHardware()->WriteCvOut(CV_OUT_2, l_led.Linearize(v));
+    float f = 0.0f;
+    if (k.CaptureValueIndicateChange(&f)) {
+      k.Print();
     }
-#else
-    cv.Calibrate();
-#endif    
-    System::Delay(10);
+    f += 1.0f;
+    cv_out.SetVoltage(0.0);
+    System::Delay(1/f);
+    cv_out.SetVoltage(5.0);
+    System::Delay(1/f);
   }
 }
