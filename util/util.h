@@ -14,6 +14,8 @@ using namespace patch_sm;
 
 // Precision used to print floats
 #define FLOAT_PRECISION 5
+// Declare a standard buffer to print floats
+#define FB(X) char X[128]
 
 // Hardware initialization with the choice of issuing debug
 // statements. Once initialize, the hardware is accessible via
@@ -25,7 +27,9 @@ DaisyPatchSM *GetHardware();
 // buffer. The buffer is not duplicated so if you use this function
 // twice on a LOG_* invocation for instance, the result is undefined.
 char *f2a(float f);
-
+// Same thing into a declared buffer.
+char *f2a(float f, char buffer[128]);
+  
 // Right now, this can't be moved into the C++ file, the template
 // instancation won't work.
 #ifdef LOG_ON

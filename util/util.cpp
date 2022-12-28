@@ -27,6 +27,10 @@ DaisyPatchSM *GetHardware() {
 
 char *f2a(float f) {
   static char buffer[128];
+  return f2a(f, buffer);
+}
+
+char *f2a(float f, char buffer[128]) {
   snprintf(buffer, 128, FLT_FMT(FLOAT_PRECISION), FLT_VAR(FLOAT_PRECISION, f));
   return buffer;
 }
