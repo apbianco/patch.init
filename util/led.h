@@ -12,7 +12,7 @@ public:
   LED() : LED(0.0, 5.0) {}
   LED(float v_min, float v_max) :
     v_max_(v_max), current_voltage_(0.0f),
-    memorized_current_voltage_(0.0f),
+    memorized_current_voltage_(0.0f), debug_(false),
     l_(Transcaler(v_min, v_max, 1.50, 2.83)) {
     SetVoltage(current_voltage_);
   }
@@ -20,10 +20,16 @@ public:
   ~LED() {
     RestoreMemorizedVoltage();
   }
+
+  void SetDebug() { debug_ = true; }
   
   void SetVoltage(float v) {
     current_voltage_ = v;
     GetHardware()->WriteCvOut(CV_OUT_2, l_.Transcale(v));
+    last_transition_time_ = System::GetNow();
+    if (debug_) {
+      Print();
+    }
   }
 
   void On() {
@@ -38,8 +44,10 @@ public:
     SetVoltage(0.0f);
   }
 
-  void Alternate() {
-    current_voltage_ == v_max_ ? Off() : On();
+  void Alternate(float delay_ms = 500) {
+    if (System::GetNow() - last_transition_time_ > delay_ms) {
+      current_voltage_ == v_max_ ? Off() : On();
+    }
   }
 
   float MemorizeVoltage() {
@@ -52,7 +60,7 @@ public:
     return memorized_current_voltage_;
   }
 
-  void Blink(int n, float delay=250) {
+  void BlockBlink(int n, float delay=250) {
     MemorizeVoltage();
     while(n--) {
       SetVoltage(v_max_);
@@ -64,16 +72,20 @@ public:
   }
 
   void Print() {
-    FB(b1); FB(b2);
-    LOG_INFO("LED: current_voltage_: %s, memorized_current_voltage_: %s",
+    FB(b1); FB(b2); FB(b3);
+    LOG_INFO("LED: current_voltage_: %s, memorized_current_voltage_: %s, "
+	     "v_max_: %s, last_transition_time_: %d",
 	     f2a(current_voltage_, b1),
-	     f2a(memorized_current_voltage_, b2));
+	     f2a(memorized_current_voltage_, b2),
+	     f2a(v_max_, b3), last_transition_time_);
   }
   
  private:
   float v_max_;
   float current_voltage_;
   float memorized_current_voltage_;
+  uint32_t last_transition_time_;
+  bool debug_;
   Transcaler l_;
 };
 
