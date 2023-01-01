@@ -66,7 +66,7 @@ int main(void) {
 
 
   LED led;
-  led.Blink(3);
+  led.BlockBlink(3);
   button.SetLED(&led);
   
   State state;
@@ -82,6 +82,7 @@ int main(void) {
       }
       break;
     case State::StateValue::RECORD_WAITING_PRESS:
+      led.Alternate();
       if (button.GetStateIfChanged(&button_state)) {
 	if (button_state.long_press) {
 	  state.AdvanceTo(State::StateValue::MAIN_LOOP);
