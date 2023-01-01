@@ -26,6 +26,22 @@ public:
     GetHardware()->WriteCvOut(CV_OUT_2, l_.Transcale(v));
   }
 
+  void On() {
+    SetVoltage(v_max_);
+  }
+
+  void OnHalf() {
+    SetVoltage(v_max_/2.0f);
+  }
+
+  void Off() {
+    SetVoltage(0.0f);
+  }
+
+  void Alternate() {
+    current_voltage_ == v_max_ ? Off() : On();
+  }
+
   float MemorizeVoltage() {
     memorized_current_voltage_ = current_voltage_;
     return current_voltage_;

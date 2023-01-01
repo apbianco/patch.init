@@ -64,12 +64,17 @@ public:
 	// blink the LED to indicate that.
 	if (led_ != nullptr) {
 	  if (time_pressed_ms_  > long_press_delay_ms_) {
-	    if (static_cast<int>(time_pressed_ms_) % 50 == 0) {
+	    if (static_cast<int>(time_pressed_ms_) % 30 == 0) {
 	      internal_led_state_ = internal_led_state_ == OFF ? ON : OFF;
-	      led_->SetVoltage(internal_led_state_ == ON ? 2.5 : 0.0);
+	      if (internal_led_state_ == ON) {
+		led_->OnHalf();
+	      } else {
+		led_->Off();
+	      }
 	    }
 	  }
 	}
+	time_pressed_ms_ = switch_.TimeHeldMs();
       } else {
 	internal_state_ = RELEASED;
 	state_ = state_ == ON ? OFF : ON;
