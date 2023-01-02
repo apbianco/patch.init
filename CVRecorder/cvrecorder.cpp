@@ -40,7 +40,7 @@ void AudioCallback(AudioHandle::InputBuffer  in,
 int main(void) {
   InitHardware(true);
   if (!global_cvrecorder.Init()) {
-    LOG_ERROR("Aborting");
+    LOG_FATAL("Initialization failed.");
     return -1;
   }
 
