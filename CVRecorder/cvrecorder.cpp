@@ -94,19 +94,20 @@ int main(void) {
       LOG_ERROR("Unexpected state value: %d", global_state.GetState());
     }
 
+    // Report changes (only when they happened)
     global_state.Report();
+    // Every second, indicate we're alive and the state we're in.
     if (LOG_INFO_EVERY_MS(1000, "Alive [%s]",
 			  global_state.GetStateAsString())) {
       if (report_cpu_load) {
-        // get the current load (smoothed value and peak values)
-        const float avgLoad = loadMeter.GetAvgCpuLoad();
-        const float maxLoad = loadMeter.GetMaxCpuLoad();
-        const float minLoad = loadMeter.GetMinCpuLoad();
-        // print it to the serial connection (as percentages)
-        LOG_INFO("Processing Load %:");
-        LOG_INFO("Max: " FLT_FMT3, FLT_VAR3(maxLoad * 100.0f));
-        LOG_INFO("Avg: " FLT_FMT3, FLT_VAR3(avgLoad * 100.0f));
-        LOG_INFO("Min: " FLT_FMT3, FLT_VAR3(minLoad * 100.0f));
+        const float avg = loadMeter.GetAvgCpuLoad();
+        const float max = loadMeter.GetMaxCpuLoad();
+        const float min = loadMeter.GetMinCpuLoad();
+	FB(b1); FB(b2); FB(b3);
+	LOG_INFO("Load max: %s, avg: %s, min: %s",
+		 f2a(max * 100.0f, b1),
+		 f2a(avg * 100.0f, b2),
+		 f2a(min * 100.0f, b3));
       }
     }
     System::Delay(0);
