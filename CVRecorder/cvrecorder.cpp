@@ -58,26 +58,42 @@ private:
   }
 };
 
+// The of the application is global so that it can be queried
+// anywhere, including in the audio callback.
+State global_state;
+
+void AudioCallback(AudioHandle::InputBuffer  in,
+                   AudioHandle::OutputBuffer out,
+                   size_t                    size) {
+  switch (global_state.GetState()) {
+  case State::StateValue::MAIN_LOOP:
+  case State::StateValue::RECORD_WAITING_PRESS:
+    // Play the samples on the first CV out
+    break;
+  case State::StateValue::RECORDING:
+    // This is it, we're sampling CV in and storing the values
+    break;
+  }
+}
+
 int main(void) {
   InitHardware(true);
 
   OnOffPushButton button;
   OnOffPushButton::State button_state;
 
-
   LED led;
   led.BlockBlink(3);
   button.SetLED(&led);
   
-  State state;
   while(true) {
-    switch(state.GetState()) {
+    switch (global_state.GetState()) {
     case State::StateValue::MAIN_LOOP:
       if (button.GetStateIfChanged(&button_state)) {
 	if (button_state.state == OnOffPushButton::StateValue::ON &&
 	    button_state.long_press) {
 	  led.On();
-	  state.AdvanceTo(State::StateValue::RECORD_WAITING_PRESS);
+	  global_state.AdvanceTo(State::StateValue::RECORD_WAITING_PRESS);
 	}
       }
       break;
@@ -85,20 +101,21 @@ int main(void) {
       led.Alternate();
       if (button.GetStateIfChanged(&button_state)) {
 	if (button_state.long_press) {
-	  state.AdvanceTo(State::StateValue::MAIN_LOOP);
+	  global_state.AdvanceTo(State::StateValue::MAIN_LOOP);
 	} else {
-	  state.AdvanceTo(State::StateValue::RECORDING);
+	  global_state.AdvanceTo(State::StateValue::RECORDING);
 	}
       }
       break;
     case State::StateValue::RECORDING:
+      // Set the sample rate at 48kHz
       break;
     default:
-      LOG_ERROR("Unexpected state value: %d", state.GetState());
+      LOG_ERROR("Unexpected state value: %d", global_state.GetState());
     }
 
-    state.Report();
-    LOG_INFO_EVERY_MS(1000, "Alive [%s]", state.GetStateAsString());
+    global_state.Report();
+    LOG_INFO_EVERY_MS(1000, "Alive [%s]", global_state.GetStateAsString());
     System::Delay(0);
   }
 }
