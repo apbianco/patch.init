@@ -94,8 +94,6 @@ public:
 	     static_cast<int>(last_ * factor_));
   }
 
-  inline uint16_t GetRawUInt16
-
   inline float GetRawValue() {
     // FIXME: we can optimize this by just returning the value of
     // GetHardware()->controls[cv_index_].Process();
