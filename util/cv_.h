@@ -27,6 +27,11 @@ using namespace patch_sm;
 // - GetRawValue(): read the current raw value value.
 //
 // - GetCalibratedValue(): read the calibrated current raw value.
+//
+// TODO:
+//
+//  - Make it an option to avoid calling ProcessAnalogControl. Process()
+//    can be invoked directly on the select control
 
 class CV_ {
 public:
@@ -89,12 +94,16 @@ public:
 	     static_cast<int>(last_ * factor_));
   }
 
-  float GetRawValue() {
+  inline uint16_t GetRawUInt16
+
+  inline float GetRawValue() {
+    // FIXME: we can optimize this by just returning the value of
+    // GetHardware()->controls[cv_index_].Process();
     GetHardware()->ProcessAnalogControls();
     return GetHardware()->GetAdcValue(cv_index_);
   }
 
-  float GetCalibratedValue() {
+  inline float GetCalibratedValue() {
     return CalibrateValue(GetRawValue());
   }
 
@@ -112,7 +121,7 @@ protected:
 private:
   bool debug_;			// Control printing additional info.
 
-  float CalibrateValue(float f) {
+  inline float CalibrateValue(float f) {
     if (f <= true_med_) {
       return l1_.Transcale(f);
     } else {
