@@ -36,14 +36,19 @@ using namespace patch_sm;
 class CV_ {
 public:
   // Basic CV corrected with two correction segments.
-  CV_(int cv_index, int factor=1000) :
+  CV_(int cv_index, int factor=1000, int sensitivity=100) :
     cv_index_(cv_index),
-    factor_(factor),
+    factor_(factor), sensitivity_(sensitivity),
     last_(0.0f),
     l1_(Transcaler(0.0f, 0.5f, 0.0f, 0.5f)),
     l2_(Transcaler(0.5f, 1.0f, 0.5f, 1.0f)),
     true_med_(0.5f),
     debug_(false) {
+    if (sensitivity_ >  factor_) {
+      LOG_ERROR("sensitivity_ >  factor_, sensitivity_ reset to %d",
+		factor_);
+      sensitivity_ = factor_;
+    }
     last_ = CalibrateValue(GetRawValue());
   }
   virtual ~CV_() = default;
@@ -63,16 +68,20 @@ public:
   
   bool GetCalibratedValueAndIndicateChange(float *new_value) {
     float fvalue = CalibrateValue(GetRawValue());
-    int value = static_cast<int>(fvalue * factor_);
-    int prev = static_cast<int>(last_ * factor_);
+    int value = static_cast<int>(fvalue * sensitivity_);
+    int prev = static_cast<int>(last_ * sensitivity_);
     if (debug_) {
       LOG_INFO("fvalue=%s last_=%s value=%d prev=%d",
 	       f2a(fvalue), f2a(last_), value, prev);
     }
-    // Always update with the new value
-    *new_value = last_ = fvalue;
-    // Return true when we estimate a change happened. factor_
-    // implements some simple truncation.
+    // Always update with the new value if one was provided
+    last_ = fvalue;
+    if (new_value != nullptr) {
+      *new_value = last_;
+    }
+    // Return true when we estimate a change happened. sensitivity_
+    // was used to truncate the result: the lower sensitivity_ is, the
+    // more resilient we are to detecting a change.
     if (value != prev) {
       return true;
     }
@@ -112,6 +121,7 @@ public:
 protected:
   int cv_index_;	        // The device index
   int factor_;			// Factor that brings input to an integer
+  int sensitivity_;		// How sensitive we are to a change
   float last_;			// Last value read
   Transcaler l1_, l2_;		// Two linearizing segments
   float true_med_;		// value < true_med_: use l1_, l2_ otherwise.
