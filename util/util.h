@@ -58,13 +58,15 @@ void LOG_ERROR(const char *format, VA... va) {
 }
 
 template <typename... VA>
-void LOG_INFO_EVERY_MS(size_t delay_ms, const char *format, VA... va) {
+bool LOG_INFO_EVERY_MS(size_t delay_ms, const char *format, VA... va) {
   static uint32_t last = System::GetNow();
   uint32_t now = System::GetNow();
   if (now - last > delay_ms) {
     last = now;
     LOG_INFO(format, va...);
+    return true;
   }
+  return false;
 }
 
 template <typename... VA>
