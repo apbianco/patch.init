@@ -14,10 +14,11 @@ class CVIn : public CV_ {
 
 class CVOut {
  public:
- CVOut() : debug_(false) {}
+  CVOut(Transcaler l): l_(l), debug_(false) {}
+  CVOut() : CVOut(Transcaler(0.0f, 1.0f, 0.0f, 1.0f)) {}
 
   void SetVoltage(float v) {
-    GetHardware()->WriteCvOut(CV_OUT_1, v);
+    GetHardware()->WriteCvOut(CV_OUT_1, l_.Transcale(v));
     if (debug_) {
       LOG_INFO("CV_OUT_1: %s", f2a(v));
     }
@@ -26,6 +27,7 @@ class CVOut {
   void SetDebug() { debug_ = true; }
   
  private:
+  Transcaler l_;
   bool debug_;
 };
 
