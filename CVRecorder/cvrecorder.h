@@ -273,8 +273,8 @@ class CVRecorder {
   Knob amplitude_knob_;          // Knob to change amplitude during playback
 
   Knob speed_knob_;              // Knob to change playback speed/direction
-  Transcaler speed_backward_;    // Map speed knob values to playback speed
-  Transcaler speed_forward_;     // Map speed knob values to foward speed
+  Transcaler speed_backward_;    // Map speed knob values to bwd playback speed
+  Transcaler speed_forward_;     // Map speed knob values to fwd playback speed
   
   CVOut cv_out_;		 // Where samples will be output
   GateIn trigger_;		 // When triggered, force play from start.
