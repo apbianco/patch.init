@@ -23,9 +23,13 @@ void AudioCallback(AudioHandle::InputBuffer  in,
   loadMeter.OnBlockStart();
   switch (global_state.GetState()) {
   case State::StateValue::MAIN_LOOP:
-  case State::StateValue::RECORD_WAITING_PRESS:
     global_cvrecorder.OutSample();
     break;
+    
+  case State::StateValue::RECORD_WAITING_PRESS:
+    global_cvrecorder.OutputMirrorsInput();
+    break;
+    
   case State::StateValue::RECORDING:
     global_cvrecorder.AddSample();
     break;
