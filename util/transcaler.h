@@ -22,7 +22,7 @@ public:
   Transcaler(float s, float e, float S, float E) :
     a_((S-E)/(s-e)), b_(0.5 * ((S+E) - a_ * (s+e))) {}
   
-  float Transcale(float x) { return (a_*x + b_); }
+  inline float Transcale(float x) { return (a_*x + b_); }
   
   void Print() {
     LOG_INFO("a=%s, b=%s", f2a(a_), f2a(b_));
