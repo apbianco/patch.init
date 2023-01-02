@@ -1,6 +1,8 @@
 #include <daisy_patch_sm.h>
 #include <daisy.h>
 
+#include "cvrecorder.h"
+
 #include "cv.h"
 #include "knobs.h"
 #include "led.h"
@@ -9,75 +11,41 @@
 using namespace daisy;
 using namespace patch_sm;
 
-class State {
-public:
-  enum StateValue {
-    MAIN_LOOP,
-    RECORD_WAITING_PRESS,
-    RECORDING,
-  };
-  
-  State() : state_(MAIN_LOOP), prev_(MAIN_LOOP), reported_(false) {}
-
-  void AdvanceTo(StateValue v) {
-    prev_ = state_;
-    state_ = v;
-    reported_ = false;
-  }
-
-  StateValue GetState() { return state_; }
-
-  const char *GetStateAsString() {
-    return StateValueToString(state_);
-  }
-
-  void Report() {
-    if (! reported_) {
-      LOG_INFO("%s --> %s",
-	       StateValueToString(prev_), StateValueToString(state_));
-      reported_ = true;
-    }
-  }
-
-private:
-  StateValue state_;
-  StateValue prev_;
-  bool reported_;
-
-  const char *StateValueToString(StateValue v) {
-    switch(v) {
-    case MAIN_LOOP:
-      return "MAIN_LOOP";
-    case RECORD_WAITING_PRESS:
-      return "RECORD_WAITING_PRESS";
-    case RECORDING:
-      return "RECORDING";
-    default:
-      return "???";
-    }
-  }
-};
-
 // The of the application is global so that it can be queried
 // anywhere, including in the audio callback.
 State global_state;
+CVRecorder global_cvrecorder;
+CpuLoadMeter loadMeter;
 
 void AudioCallback(AudioHandle::InputBuffer  in,
                    AudioHandle::OutputBuffer out,
                    size_t                    size) {
+  loadMeter.OnBlockStart();
   switch (global_state.GetState()) {
   case State::StateValue::MAIN_LOOP:
   case State::StateValue::RECORD_WAITING_PRESS:
-    // Play the samples on the first CV out
+    global_cvrecorder.OutSample();
     break;
   case State::StateValue::RECORDING:
-    // This is it, we're sampling CV in and storing the values
+    global_cvrecorder.AddSample();
     break;
   }
+  loadMeter.OnBlockEnd();
 }
 
 int main(void) {
   InitHardware(true);
+  if (!global_cvrecorder.Init()) {
+    LOG_ERROR("Aborting");
+    return -1;
+  }
+
+  // A blocksize of one ensures that AudioCallback is called at 48kHz
+  // GetHardware()->SetAudioBlockSize(1);
+  loadMeter.Init(GetHardware()->AudioSampleRate(),
+		 GetHardware()->AudioBlockSize());
+  GetHardware()->StartAudio(AudioCallback);
+  global_cvrecorder.Print();
 
   OnOffPushButton button;
   OnOffPushButton::State button_state;
@@ -85,14 +53,16 @@ int main(void) {
   LED led;
   led.BlockBlink(3);
   button.SetLED(&led);
+
+  bool report_cpu_load = false;
   
   while(true) {
+    global_cvrecorder.ReadKnobsAdjustParameters();
     switch (global_state.GetState()) {
     case State::StateValue::MAIN_LOOP:
       if (button.GetStateIfChanged(&button_state)) {
 	if (button_state.state == OnOffPushButton::StateValue::ON &&
 	    button_state.long_press) {
-	  led.On();
 	  global_state.AdvanceTo(State::StateValue::RECORD_WAITING_PRESS);
 	}
       }
@@ -103,22 +73,38 @@ int main(void) {
 	if (button_state.long_press) {
 	  global_state.AdvanceTo(State::StateValue::MAIN_LOOP);
 	} else {
+	  led.OnHalf();
+	  global_cvrecorder.Reset();
 	  global_state.AdvanceTo(State::StateValue::RECORDING);
 	}
       }
       break;
     case State::StateValue::RECORDING:
-      // Set the sample rate at 48kHz
+      if (button.GetStateIfChanged(&button_state)) {
+	global_state.AdvanceTo(State::StateValue::MAIN_LOOP);
+	global_cvrecorder.Print();
+	led.Off();
+      }
       break;
     default:
       LOG_ERROR("Unexpected state value: %d", global_state.GetState());
     }
 
     global_state.Report();
-    LOG_INFO_EVERY_MS(1000, "Alive [%s]", global_state.GetStateAsString());
+    if (LOG_INFO_EVERY_MS(1000, "Alive [%s]",
+			  global_state.GetStateAsString())) {
+      if (report_cpu_load) {
+        // get the current load (smoothed value and peak values)
+        const float avgLoad = loadMeter.GetAvgCpuLoad();
+        const float maxLoad = loadMeter.GetMaxCpuLoad();
+        const float minLoad = loadMeter.GetMinCpuLoad();
+        // print it to the serial connection (as percentages)
+        LOG_INFO("Processing Load %:");
+        LOG_INFO("Max: " FLT_FMT3, FLT_VAR3(maxLoad * 100.0f));
+        LOG_INFO("Avg: " FLT_FMT3, FLT_VAR3(avgLoad * 100.0f));
+        LOG_INFO("Min: " FLT_FMT3, FLT_VAR3(minLoad * 100.0f));
+      }
+    }
     System::Delay(0);
   }
 }
-
-
-
