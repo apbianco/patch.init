@@ -1,8 +1,3 @@
-// This should be defining the CV baseclass. Knobs and CVIn should
-// inherit from that base class.
-//
-// Let's see how taking the gate into account brings...
-
 #ifndef KNOBS_H
 #define KNOBS_H
 
@@ -16,10 +11,15 @@
 using namespace daisy;
 using namespace patch_sm;
 
+// The Knob class is a CV_ whose transcalers are initialized with
+// three (start/mid/end) calibration values mapped to a 0.0 - 0.5 -
+// 1.0 output.
 class Knob : public CV_ {
 public:
-  Knob(int cv_index, LinearCalibrationValues kcv, int factor=1000) :
-    CV_(cv_index, factor) {
+  Knob(int cv_index,
+       LinearCalibrationValues kcv,
+       int factor=1000, int sensitivity=100) :
+    CV_(cv_index, factor, sensitivity) {
       l1_ = Transcaler(kcv.true_min, kcv.true_med, 0.0f, 0.5f);
       l2_ = Transcaler(kcv.true_med, kcv.true_max, 0.5f, 1.0f);
       true_med_ = kcv.true_med;
