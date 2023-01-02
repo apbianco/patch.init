@@ -31,7 +31,7 @@ char *f2a(float f);
 char *f2a(float f, char buffer[128]);
   
 // Right now, this can't be moved into the C++ file, the template
-// instancation won't work.
+// instanciation won't work.
 #ifdef LOG_ON
 template <typename... VA>
 static void LOG_(const char *format, const char *what, VA... va) {
@@ -43,18 +43,27 @@ template <typename... VA>
 static void LOG_(const char* format, const char *what, VA... va) {}
 #endif //  LOG_ON
 
-// Log with //, !! or ** prefixes.
+// Log with //, !!, ** or +_O prefixes. Logging a fatal error makes
+// the program exit.
 template <typename... VA>
 void LOG_INFO(const char *format, VA... va) {
   LOG_(format, "// ", va...);
 }
+
 template <typename... VA>
 void LOG_WARN(const char *format, VA... va) {
     LOG_(format, "!! ", va...);
 }
+
 template <typename... VA>
 void LOG_ERROR(const char *format, VA... va) {
   LOG_(format, "** ", va...);
+}
+
+template <typename... VA>
+void LOG_FATAL(const char *format, VA... va) {
+  LOG_(format, "+_O ", va...);
+  exit(1);
 }
 
 template <typename... VA>
