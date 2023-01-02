@@ -72,10 +72,14 @@ private:
 // be owned by an instance of the CVRecorder class.
 float DSY_SDRAM_BSS *cv_samples_ = nullptr;
 
+// A class to manage recording and playing back sampled CV input on
+// the CV output. Recording/playing samples back is managed via a
+// circular buffer that can be played forward/backward at various
+// speed and amplification levels.
 class CVRecorder {
  public:
  CVRecorder(uint32_t seconds=2, uint32_t sample_rate=48000) :
-    sample_rate_(sample_rate),
+  sample_rate_(sample_rate),
     buffer_size_(sample_rate * seconds),
     record_index_(0),
     play_index_increment_(1), recorded_length_(0),
@@ -86,14 +90,20 @@ class CVRecorder {
     speed_forward_(Transcaler(0.5f, 1.0f, 1.0f, 9.0f)),
     cv_out_(CVOut(Transcaler(0.0f, 1.0f, 0.0f, 5.0f))) {}
 
+  // Prepare the instance to start capturing samples again.
   void Reset() {
     record_index_ = 0;
     play_index_ = 0;
     play_index_increment_ = 1;
+    recorded_length_ = 0;
+    amplitude_ = 1.0f;
+    crossed_ = false;
     const size_t num_bytes = buffer_size_ * sizeof(float);
     memset(cv_samples_, 0, num_bytes);
   }
-    
+
+  // Post constructor initialization of the instance, which can only
+  // be called after the rest of the hardware has been initialized.
   bool Init() {
     trigger_.Init((dsy_gpio_pin *)&DaisyPatchSM::B10, true);
     const size_t num_bytes = buffer_size_ * sizeof(float);
@@ -110,9 +120,13 @@ class CVRecorder {
     free(cv_samples_);
   }
 
-  // Add a sample and retur true when we've started to write again
-  // at the beginning of the buffer.
+  // Add a sample read from the recording knob. Keep track of where we
+  // are in the circular buffer and how much valid data the buffer
+  // actualy holds. The sampled value is emitted on the CV out.
   inline void AddSample() {
+    if (cv_samples_ == nullptr) {
+      LOG_FATAL("Init() hasn't been called");
+    }
     float v = recording_knob_.GetCalibratedValue();
     // This isn't the most defensive but pretty safe unless
     // record_index_ has been accidentaly overwritten.
@@ -122,17 +136,16 @@ class CVRecorder {
     }
     if (record_index_ >= buffer_size_) {
       record_index_ = 0;
-      LOG_INFO("Reset");
     }
     // Mirror the value to the CV out.
     cv_out_.SetVoltage(v);
   }
 
+  // Emit a sample out and manage the circular buffer of samples,
+  // taking its read direction into account.
   void OutSample() {
-    // Defensive: no samples, no service.
     if (cv_samples_ == nullptr) {
-      cv_out_.SetVoltage(0.0f);
-      return;
+      LOG_FATAL("Init() hasn't been called");
     }
     // Set the voltage out.
     cv_out_.SetVoltage(amplitude_ * cv_samples_[play_index_]);
@@ -145,19 +158,32 @@ class CVRecorder {
       play_index_ =
 	recorded_length_ > abs(play_index_increment_) ?
 	recorded_length_ - 1 : 0;
-      crossed_ = recorded_length_ > 0 ? true : false;
+      crossed_ = true;
     } else {
       if (play_index_ >= recorded_length_) {
 	play_index_ = 0;
-	crossed_ = recorded_length_ > 0 ? true : false;
+	crossed_ = true;
       }
     }
   }
 
+  // Write on the CV out what we're reading on the recording knob.
   void OutputMirrorsInput() {
     cv_out_.SetVoltage(amplitude_ * recording_knob_.GetCalibratedValue());
   }
 
+  // Reads all knobs are adjust the parameters conditionning how the
+  // circular buffer data is read. Read the first input gate and when
+  // the gate as triggered configure the circular buffer to start
+  // playing from the beginning (direction dependent)
+  //
+  // Flashes  the front pannel LED when:
+  //
+  // - The speed knob is returned to a position that translates into a
+  //   forward read at normal speed.
+  // - When we playback routine has positionned the crossed_ field,
+  //   indicating that we went over or under the circular buffer
+  //   capacity.
   void ReadKnobsAdjustParameters() {
     float amplitude;
     bool changed = false;
@@ -199,14 +225,16 @@ class CVRecorder {
       }
     }
     // if we crossed the end of buffer boundary (direction dependant),
-    // blink the light briefly twice.
-    if (crossed_) {
+    // blink the light briefly twice. Only do that when we have data
+    // in the buffer.
+    if (crossed_ && recorded_length_ > 0) {
       LED led;
       led.BlockBlink(2, 25);
-      crossed_ = false;
     }
+    crossed_ = false;
   }
 
+  // FIXME: This returns bogus results. Implement this differently.
   float RecordLengthInMilliseconds() {
     return (1000.0f * recorded_length_) / GetHardware()->AudioSampleRate();
   }
@@ -232,21 +260,24 @@ class CVRecorder {
   }
 
  private:
-  const uint32_t sample_rate_;
-  const int32_t buffer_size_;
-  int32_t record_index_;
-  int play_index_;
-  int32_t play_index_increment_;
-  int32_t recorded_length_;
-  float amplitude_;
-  bool crossed_;
-  Knob recording_knob_;
-  Knob amplitude_knob_;
-  Knob speed_knob_;
-  Transcaler speed_backward_;
-  Transcaler speed_forward_;
-  CVOut cv_out_;
-  GateIn trigger_;
+  const uint32_t sample_rate_;	 // Number of samples we're capturing/sec.
+  const int32_t buffer_size_;	 // Buffer size we need for recording N sec.
+  int32_t record_index_;	 // Where are in recording
+  int play_index_;		 // Next sample to play
+  int32_t play_index_increment_; // Offset to the next sample to play
+  int32_t recorded_length_;      // Index of the last sampled value
+  float amplitude_;              // Amplitute multiplier
+  bool crossed_;                 // True when reading went over/under
+  
+  Knob recording_knob_;          // Knob providing input when recording
+  Knob amplitude_knob_;          // Knob to change amplitude during playback
+
+  Knob speed_knob_;              // Knob to change playback speed/direction
+  Transcaler speed_backward_;    // Map speed knob values to playback speed
+  Transcaler speed_forward_;     // Map speed knob values to foward speed
+  
+  CVOut cv_out_;		 // Where samples will be output
+  GateIn trigger_;		 // When triggered, force play from start.
 };
 
 #endif //  CVRECORDER_H
