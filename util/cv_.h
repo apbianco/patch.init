@@ -10,17 +10,19 @@ using namespace patch_sm;
 // Operations supported on CV inputs (CV inputs are either
 // potentiometers or sampled input jacks):
 //
-// - Calibration: print the current value. Use this to determine the
-//   offset values for min/mid/max to be provided as input to a
+// - Calibration: print the current value emitted (potentiometer) or
+//   found on the input jack (CV). Use this to determine the offset
+//   values for min/mid/max to be provided as input to a
 //   LinearCalibrationValues instance.
 //
-// - SetDebug(): call to have extra information logged. Debugging
-//   is off by default.
+// - SetDebug(): call to have extra information logged. Off by
+//   default.
 //
 // - GetCalibratedValueAndIndicateChange: a method loading the current
 //   calibrated value to a pointed location, returning true when the
 //   value has changed for some definition of changed: crude rounding
-//   multiplying by a factor.
+//   obtained taking the integer value of the input multiplied by a
+//   factor we call sensitivity.
 //
 // - Print(): print raw, calibrated and scaled value of the CV.
 //
