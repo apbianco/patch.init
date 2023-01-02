@@ -5,6 +5,7 @@
 #include "knobs.h"
 #include "transcaler.h"
 #include "cv.h"
+#include "led.h"
 
 class State {
 public:
@@ -73,8 +74,8 @@ class CVRecorder {
     amplitude_(1.0f), 
     recording_knob_(CreateKnob1()), amplitude_knob_(CreateKnob2()),
     speed_knob_(CreateKnob4()),
-    speed_backward_(Transcaler(0.0f, 0.5f, -4.1f, -1.0f)),
-    speed_forward_(Transcaler(0.5f, 1.0f, 1.0f, 4.1f)),
+    speed_backward_(Transcaler(0.0f, 0.5f, -9.0f, -1.0f)),
+    speed_forward_(Transcaler(0.5f, 1.0f, 1.0f, 9.0f)),
     cv_out_(CVOut(Transcaler(0.0f, 1.0f, 0.0f, 5.0f))) {}
 
   void Reset() {
@@ -136,6 +137,10 @@ class CVRecorder {
     }
   }
 
+  void OutputMirrorsInput() {
+    cv_out_.SetVoltage(amplitude_ * recording_knob_.GetCalibratedValue());
+  }
+
   void ReadKnobsAdjustParameters() {
     float amplitude;
     bool changed = false;
@@ -155,7 +160,12 @@ class CVRecorder {
     }
     if (changed) {
       Print(true);
+      if (play_index_increment_ == 1) {
+	LED led;
+	led.BlockBlink(2, 50);
+      }
     }
+
   }
 
   float RecordLengthInMilliseconds() {
