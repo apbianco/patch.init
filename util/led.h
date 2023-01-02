@@ -62,7 +62,7 @@ public:
 
   void BlockBlink(int n, float delay=250) {
     MemorizeVoltage();
-    while(n--) {
+    while(n-- > 0) {
       SetVoltage(v_max_);
       System::Delay(delay);
       SetVoltage(0.0f);
