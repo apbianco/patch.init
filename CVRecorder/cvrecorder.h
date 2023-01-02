@@ -6,7 +6,13 @@
 #include "transcaler.h"
 #include "cv.h"
 #include "led.h"
+#include "hid/gatein.h"
 
+// An instance of this class is used to keep track of the state of the
+// application. A method exists to advance to a new state, remembering
+// where we came from (and how long it took us to move to the new
+// state) so that this information can be displayed on demand via the
+// Report() method.
 class State {
 public:
   enum StateValue {
@@ -62,6 +68,8 @@ private:
   }
 };
 
+// Sampled CV values held in the SDRAM bss section. This pointer will
+// be owned by an instance of the CVRecorder class.
 float DSY_SDRAM_BSS *cv_samples_ = nullptr;
 
 class CVRecorder {
@@ -71,7 +79,7 @@ class CVRecorder {
     buffer_size_(sample_rate * seconds),
     record_index_(0),
     play_index_increment_(1), recorded_length_(0),
-    amplitude_(1.0f), 
+    amplitude_(1.0f), crossed_(false),
     recording_knob_(CreateKnob1()), amplitude_knob_(CreateKnob2()),
     speed_knob_(CreateKnob4()),
     speed_backward_(Transcaler(0.0f, 0.5f, -9.0f, -1.0f)),
@@ -87,6 +95,7 @@ class CVRecorder {
   }
     
   bool Init() {
+    trigger_.Init((dsy_gpio_pin *)&DaisyPatchSM::B10, true);
     const size_t num_bytes = buffer_size_ * sizeof(float);
     cv_samples_ = static_cast<float *>(malloc(num_bytes));
     if (cv_samples_ == nullptr) {
@@ -120,19 +129,27 @@ class CVRecorder {
   }
 
   void OutSample() {
+    // Defensive: no samples, no service.
     if (cv_samples_ == nullptr) {
       cv_out_.SetVoltage(0.0f);
       return;
     }
+    // Set the voltage out.
     cv_out_.SetVoltage(amplitude_ * cv_samples_[play_index_]);
+    // Point to the next sample to play
     play_index_ += play_index_increment_;
+    // Handler over- and under-flows. Set crossed_ to true when we
+    // went over or under (so that the LED can be flashed to indicate
+    // the start of a sequence.)
     if (play_index_ < 0) {
       play_index_ =
 	recorded_length_ > abs(play_index_increment_) ?
 	recorded_length_ - 1 : 0;
+      crossed_ = recorded_length_ > 0 ? true : false;
     } else {
       if (play_index_ >= recorded_length_) {
 	play_index_ = 0;
+	crossed_ = recorded_length_ > 0 ? true : false;
       }
     }
   }
@@ -149,6 +166,8 @@ class CVRecorder {
       amplitude_ = amplitude;
       changed = true;
     }
+    // If the speed knob has changed, map its value to the number of
+    // samples we skip in order to loop faster through the buffer.
     float index_increment;
     if (speed_knob_.GetCalibratedValueAndIndicateChange(&index_increment)) {
       if (index_increment >= 0.5f) {
@@ -158,6 +177,20 @@ class CVRecorder {
       }
       changed = true;
     }
+    // If the trigger was activated, move the reading head at the
+    // beginning of the buffer (which is direction dependent.)
+    if (trigger_.Trig()) {
+      if (play_index_increment_ > 0) {
+	play_index_ = 0;
+      } else {
+	play_index_ = (recorded_length_ > abs(play_index_increment_) ?
+		       recorded_length_ - 1 : 0);
+      }
+      crossed_ = true;
+    }
+    // If we registered a change, print some debug information and if
+    // we moved back to playing at normal forward speed, blink the led
+    // twice.)
     if (changed) {
       Print(true);
       if (play_index_increment_ == 1) {
@@ -165,7 +198,13 @@ class CVRecorder {
 	led.BlockBlink(2, 50);
       }
     }
-
+    // if we crossed the end of buffer boundary (direction dependant),
+    // blink the light briefly twice.
+    if (crossed_) {
+      LED led;
+      led.BlockBlink(2, 25);
+      crossed_ = false;
+    }
   }
 
   float RecordLengthInMilliseconds() {
@@ -200,12 +239,14 @@ class CVRecorder {
   int32_t play_index_increment_;
   int32_t recorded_length_;
   float amplitude_;
+  bool crossed_;
   Knob recording_knob_;
   Knob amplitude_knob_;
   Knob speed_knob_;
   Transcaler speed_backward_;
   Transcaler speed_forward_;
   CVOut cv_out_;
+  GateIn trigger_;
 };
 
 #endif //  CVRECORDER_H
