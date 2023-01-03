@@ -69,9 +69,8 @@ knob #2 and speed/direction of the replay with knob #4.
 
 - Long press the push button, the LED flashes at 1Hz. Turn knob #1 to
   adjust the CV to the level at which you want to start the
-  recording. If you have CV1 out connected to - for instance a filter
-  - you will be able to hear where you want your CV recording to start
-  from.
+  recording. If you have CV1 out connected (to for instance a VCF) you
+  will be able to hear where you want your CV recording to start from.
 
 - Press the push button one more time. The LED lights up at half
   intensity and you can start moving knob #1 to generate a 0V to 5V
