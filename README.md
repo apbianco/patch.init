@@ -67,15 +67,15 @@ knob #2 and speed/direction of the replay with knob #4.
 - Turn it on, the faceplate LED will flash three times to indicate the
   system is ready.
 
-- Long press the push button, the LED flashes at 1Hz. Turn knob #1 to
-  adjust the CV to the level at which you want to start the
+- Long press the push button, the LED starts flashing at 1Hz. Turn
+  knob #1 to adjust the CV to the level at which you want to start the
   recording. If you have CV1 out connected (to for instance a VCF) you
   will be able to hear where you want your CV recording to start from.
 
-- Press the push button one more time. The LED lights up at half
-  intensity and you can start moving knob #1 to generate a 0V to 5V
-  control voltage. Press the push button when you want to stop the
-  recording.
+- Press the push button: the LED lights up at half intensity and you
+  can start moving knob #1 to generate and record a 0V to 5V control
+  voltage. That control voltage is mirrored on CV1 out. Press the push
+  button when you want to stop the recording.
 
 - The CV sequence you recorded will start to be played immediately on
   CV1 out. The LED will flash each time a sequence starts. Knob #2
@@ -94,7 +94,8 @@ Left TODO:
 - Use knob #3 to offset the start of a replay
 
 - Use the toggle to switch from continuous replay to triggered only
-  replay (using Gate 1 input or the push button.)
+  replay (the replay trigger will be a Gate 1 input or the push
+  button.)
 
 
 
