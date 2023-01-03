@@ -3,10 +3,28 @@
 
 ## util/
 
-- `util.h`: `LOG_{INFO,WARN,ERROR,FATAL}` helper functions. Logging can be
-  entirely disabled by not defining the `LOG_ON` macro
+- `util.h`: `LOG_{INFO,WARN,ERROR,FATAL}` helper functions. Logging
+  can be entirely disabled by not defining the `LOG_ON` macro
   (default). `f2a` methods help convert a float to a string for
-  logging, with `FLOAT_PRECISION` digits.
+  logging, with `FLOAT_PRECISION` digits. Really useful:
+  `LOG_INFO_EVERY_MS` which allows you to print something at an
+  internval in milli-seconds.
+
+  Offers some simplified printing of floating point values:
+
+  ```
+  float f = 1.2;
+  LOG_INFO("f=%s", f2a(f));
+  ```
+
+  If you need to print several values in one `LOG_*` statement:
+
+  ```
+  FB(b1); FB(b2);
+  float f1 = 1.2;
+  float f2 = 1.3;
+  LOG_INFO("f1=%s, f2=%s", f2a(f1, b1), f2a(f2, b2));
+  ```
 
 - `knobs.h`: Create individual `Knob` class instances with range
    compentation. `PrintIfChange` and methods allow you to obtain a
