@@ -61,8 +61,9 @@ int main(void) {
   bool report_cpu_load = false;
   
   while(true) {
-    global_cvrecorder.ReadKnobsAdjustParameters();
-    switch (global_state.GetState()) {
+    auto state = global_state.GetState();
+    global_cvrecorder.ReadKnobsAdjustParameters(state);
+    switch (state) {
     case State::StateValue::MAIN_LOOP:
       if (button.GetStateIfChanged(&button_state)) {
 	if (button_state.state == OnOffPushButton::StateValue::ON &&

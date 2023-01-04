@@ -184,9 +184,10 @@ class CVRecorder {
   // - When we playback routine has positionned the crossed_ field,
   //   indicating that we went over or under the circular buffer
   //   capacity.
-  void ReadKnobsAdjustParameters() {
+  void ReadKnobsAdjustParameters(State::StateValue current_state) {
     float amplitude;
     bool changed = false;
+    bool play_index_increment_changed = false;
     // If the amplitude knob has changed, use its value as a multiplier
     if (amplitude_knob_.GetCalibratedValueAndIndicateChange(&amplitude)) {
       amplitude_ = amplitude;
@@ -201,7 +202,7 @@ class CVRecorder {
       } else {
 	play_index_increment_ = speed_backward_.Transcale(index_increment);
       }
-      changed = true;
+      play_index_increment_changed = true;
     }
     // If the trigger was activated, move the reading head at the
     // beginning of the buffer (which is direction dependent.)
@@ -219,15 +220,17 @@ class CVRecorder {
     // twice.)
     if (changed) {
       Print(true);
-      if (play_index_increment_ == 1) {
+      if (play_index_increment_ == 1 && play_index_increment_changed) {
 	LED led;
 	led.BlockBlink(2, 50);
       }
     }
-    // if we crossed the end of buffer boundary (direction dependant),
-    // blink the light briefly twice. Only do that when we have data
-    // in the buffer.
-    if (crossed_ && recorded_length_ > 0) {
+    // if we crossed the end of buffer boundary (direction dependant)
+    // during playback, blink the light briefly twice. Only do that
+    // when we have data in the buffer.
+    if (crossed_ &&
+	recorded_length_ > 0 &&
+	current_state == State::StateValue::MAIN_LOOP) {
       LED led;
       led.BlockBlink(2, 25);
     }
