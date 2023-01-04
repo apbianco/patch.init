@@ -16,13 +16,13 @@
 class State {
 public:
   enum StateValue {
-    MAIN_LOOP,
+    PLAYBACK,
     RECORD_WAITING_PRESS,
     RECORDING,
   };
   
  State() :
-  state_(MAIN_LOOP), prev_(MAIN_LOOP),
+  state_(PLAYBACK), prev_(PLAYBACK),
     reported_(false), prev_clock_(System::GetNow()) {}
 
   void AdvanceTo(StateValue v) {
@@ -56,8 +56,8 @@ private:
 
   const char *StateValueToString(StateValue v) {
     switch(v) {
-    case MAIN_LOOP:
-      return "MAIN_LOOP";
+    case PLAYBACK:
+      return "PLAYBACK";
     case RECORD_WAITING_PRESS:
       return "RECORD_WAITING_PRESS";
     case RECORDING:
@@ -230,7 +230,7 @@ class CVRecorder {
     // when we have data in the buffer.
     if (crossed_ &&
 	recorded_length_ > 0 &&
-	current_state == State::StateValue::MAIN_LOOP) {
+	current_state == State::StateValue::PLAYBACK) {
       LED led;
       led.BlockBlink(2, 25);
     }

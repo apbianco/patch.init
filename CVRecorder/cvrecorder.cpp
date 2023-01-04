@@ -22,7 +22,7 @@ void AudioCallback(AudioHandle::InputBuffer  in,
                    size_t                    size) {
   loadMeter.OnBlockStart();
   switch (global_state.GetState()) {
-  case State::StateValue::MAIN_LOOP:
+  case State::StateValue::PLAYBACK:
     global_cvrecorder.OutSample();
     break;
     
@@ -64,7 +64,7 @@ int main(void) {
     auto state = global_state.GetState();
     global_cvrecorder.ReadKnobsAdjustParameters(state);
     switch (state) {
-    case State::StateValue::MAIN_LOOP:
+    case State::StateValue::PLAYBACK:
       if (button.GetStateIfChanged(&button_state)) {
 	if (button_state.state == OnOffPushButton::StateValue::ON &&
 	    button_state.long_press) {
@@ -76,7 +76,7 @@ int main(void) {
       led.Alternate();
       if (button.GetStateIfChanged(&button_state)) {
 	if (button_state.long_press) {
-	  global_state.AdvanceTo(State::StateValue::MAIN_LOOP);
+	  global_state.AdvanceTo(State::StateValue::PLAYBACK);
 	} else {
 	  led.OnHalf();
 	  global_cvrecorder.Reset();
@@ -86,7 +86,7 @@ int main(void) {
       break;
     case State::StateValue::RECORDING:
       if (button.GetStateIfChanged(&button_state)) {
-	global_state.AdvanceTo(State::StateValue::MAIN_LOOP);
+	global_state.AdvanceTo(State::StateValue::PLAYBACK);
 	global_cvrecorder.Print();
 	led.Off();
       }
