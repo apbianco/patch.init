@@ -12,7 +12,9 @@ public:
   LED() : LED(0.0, 5.0) {}
   LED(float v_min, float v_max) :
     v_max_(v_max), current_voltage_(0.0f),
-    memorized_current_voltage_(0.0f), debug_(false),
+    memorized_current_voltage_(0.0f),
+    last_transition_time_(System::GetNow()),
+    debug_(false),
     l_(Transcaler(v_min, v_max, 1.50, 2.83)) {
     SetVoltage(current_voltage_);
   }
@@ -62,7 +64,7 @@ public:
 
   void BlockBlink(int n, float delay=250) {
     MemorizeVoltage();
-    while(n-- > 0) {
+    for (auto count = 0; count < n; count += 1) {
       SetVoltage(v_max_);
       System::Delay(delay);
       SetVoltage(0.0f);
