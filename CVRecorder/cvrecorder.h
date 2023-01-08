@@ -220,10 +220,10 @@ class CVRecorder {
     // twice.)
     if (changed) {
       Print(true);
-      if (play_index_increment_ == 1 && play_index_increment_changed) {
-	LED led;
-	led.BlockBlink(2, 50);
-      }
+    }
+    if (play_index_increment_ == 1 && play_index_increment_changed) {
+      LED led;
+      led.BlockBlink(3, 20);
     }
     // if we crossed the end of buffer boundary (direction dependant)
     // during playback, blink the light briefly twice. Only do that
@@ -232,7 +232,7 @@ class CVRecorder {
 	recorded_length_ > 0 &&
 	current_state == State::StateValue::PLAYBACK) {
       LED led;
-      led.BlockBlink(2, 25);
+      led.BlockBlink(1, 25);
     }
     crossed_ = false;
   }
