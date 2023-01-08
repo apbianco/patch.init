@@ -10,11 +10,11 @@ using namespace patch_sm;
 int main(void) {
   InitHardware(true);
 
-  VSTrig t(50);
+  VSTrig t;
   t.Init();
 
   while(true) {
     t.Process();
+    LOG_INFO_EVERY_MS(1000, "Alive...");
   }
 }
-
