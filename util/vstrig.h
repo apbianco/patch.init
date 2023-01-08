@@ -20,8 +20,8 @@ class VSTrig {
 
   void Init() {
     v_trigger_.Init((dsy_gpio_pin *)&DaisyPatchSM::B9, true);
-    s_trigger_.mode = DSY_GPIO_MODE_ANALOG;
-    s_trigger_.pull = DSY_GPIO_PULLDOWN;
+    s_trigger_.mode = DSY_GPIO_MODE_OUTPUT_PP;
+    s_trigger_.pull = DSY_GPIO_NOPULL;
     s_trigger_.pin = DaisyPatchSM::B6;
     dsy_gpio_init(&s_trigger_);
     dsy_gpio_write(&s_trigger_, s_trigger_state_);
@@ -33,6 +33,10 @@ class VSTrig {
 			StateToString(v_trigger_state_),
 			StateToString(s_trigger_state_));
     }
+  }
+
+  void Debug() {
+    debug_ = true;
   }
 
   inline void UpdateState() {
@@ -52,7 +56,7 @@ class VSTrig {
   }
 
   void Process() {
-    // VD|SU + V down --> VU|SD
+    // VD|SU + V up --> VU|SD
     if (v_trigger_state_ == VD && s_trigger_state_ == SU) {
       if (v_trigger_.State() == true) {
 	v_trigger_state_ = VU;
