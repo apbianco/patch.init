@@ -15,8 +15,11 @@ class GateOut {
     gate_.mode = DSY_GPIO_MODE_OUTPUT_PP;
     gate_.pull = DSY_GPIO_NOPULL;
     if (gate_index_ < 1 || gate_index_ > 2) {
-      LOG_WARN("Gate index out of range.");
+      LOG_WARN("Gate index %d out of range", gate_index_);
     }
+    // FIXME: This should be fixed with
+    // https://github.com/electro-smith/libDaisy/pull/558 being pulled
+    // in.
     gate_.pin = (gate_index_ == 1 ?
 		 DaisyPatchSM::B6 : DaisyPatchSM::B5);
     dsy_gpio_init(&gate_);
