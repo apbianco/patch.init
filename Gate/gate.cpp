@@ -7,11 +7,18 @@
 int main(void) {
   InitHardware(true);
 
-  auto gate = CreateGateOut1();
-  gate.SetDebug();
-  gate.Init();
+  auto out_gate = CreateOutGate1();
+  auto in_gate = CreateInGate1();
+  
+  out_gate.SetDebug();
+  out_gate.Init();
+  in_gate.SetDebug();
+  in_gate.Init();
   
   while(true) {
-    gate.Alternate(500);
+    out_gate.Alternate(500);
+    out_gate.Print();
+    in_gate.GetState();
+    System::Delay(50);
   }
 }  
