@@ -13,12 +13,15 @@ class Gate_ {
     OFF,
     UNKNOWN,
   };
+  // This is really for InGate/OutGate instances declaration that are
+  // going to be assigned a properly initialized object.
+  Gate_(): Gate_(-1) {}
+  
   Gate_(int32_t gate_index) :
     gate_index_(gate_index),
     last_transition_time_(System::GetNow()), state_(OFF),
     initialized_(false), debug_(false) {
     if (gate_index_ < 1 || gate_index_ > 2) {
-      LOG_WARN("Gate index %d out of range, defaulting to 1", gate_index_);
       gate_index_ = 1;
     }
   }
@@ -63,6 +66,7 @@ protected:
 
 class InGate : public Gate_ {
  public:
+  InGate() = default;
   InGate(int gate_index): Gate_(gate_index) {}
 
   void Init() {
@@ -91,6 +95,7 @@ private:
 
 class OutGate : public Gate_ {
  public:
+  OutGate() = default;
   OutGate(int gate_index): Gate_(gate_index) {}
 
   void Init() {
