@@ -150,7 +150,15 @@ class CVRecorder {
     cv_out_.SetVoltage(v);
   }
 
-  // FIXME: Needs comment
+  // Reset the play index if necessary, depending on the direction of
+  // playback.
+  //
+  // Forward playback: if the play_index is above the recorded length,
+  // set the play index to be the first sample to play (controlled by
+  // the scrub knob.)
+  //
+  // Backward playback: if the play index becomes negative, set the
+  // play index to be last sample that can be played.
   inline void ResetOrForceResetPlayIndex(bool force_reset) {
     if (play_index_ < 0 ||
 	(force_reset && play_index_increment_ < 0)) {
