@@ -15,5 +15,6 @@ DAISYSP_DIR = ../../../DaisyExamples/DaisySP
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 include $(SYSTEM_FILES_DIR)/Makefile
 
-override CPPFLAGS += -DLOG_ON -I../util
+# Use -DLOG_ON for debug logs on the serial line
+override CPPFLAGS += -I../util
 override CFLAGS += -Werror
