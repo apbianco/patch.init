@@ -6,7 +6,7 @@
 #include "transcaler.h"
 #include "cv.h"
 #include "led.h"
-#include "hid/gatein.h"
+#include "gate.h"
 
 // An instance of this class is used to keep track of the state of the
 // application. A method exists to advance to a new state, remembering
@@ -82,10 +82,10 @@ class CVRecorder {
   sample_rate_(sample_rate),
     buffer_size_(sample_rate * seconds),
     record_index_(0),
-    play_index_increment_(1), recorded_length_(0),
+    play_index_increment_(1), first_sample_to_play_(0), recorded_length_(0),
     amplitude_(1.0f), crossed_(false),
     recording_knob_(CreateKnob1()), amplitude_knob_(CreateKnob2()),
-    speed_knob_(CreateKnob4()),
+    scrub_knob_(CreateKnob3()), speed_knob_(CreateKnob4()),
     speed_backward_(Transcaler(0.0f, 0.5f, -9.0f, -1.0f)),
     speed_forward_(Transcaler(0.5f, 1.0f, 1.0f, 9.0f)),
     cv_out_(CVOut(Transcaler(0.0f, 1.0f, 0.0f, 5.0f))) {}
@@ -95,6 +95,7 @@ class CVRecorder {
     record_index_ = 0;
     play_index_ = 0;
     play_index_increment_ = 1;
+    first_sample_to_play_ = 0;
     recorded_length_ = 0;
     amplitude_ = 1.0f;
     crossed_ = false;
@@ -105,7 +106,10 @@ class CVRecorder {
   // Post constructor initialization of the instance, which can only
   // be called after the rest of the hardware has been initialized.
   bool Init() {
-    trigger_.Init((dsy_gpio_pin *)&DaisyPatchSM::B10, true);
+    // Triggering gate is gate #1
+    trigger_ = CreateInGate1();
+    trigger_.Init();
+    
     const size_t num_bytes = buffer_size_ * sizeof(float);
     cv_samples_ = static_cast<float *>(malloc(num_bytes));
     if (cv_samples_ == nullptr) {
@@ -114,6 +118,11 @@ class CVRecorder {
     }
     Reset();
     return true;
+  }
+
+  void SetDebug() {
+    debug_ = true;
+    trigger_.SetDebug();
   }
 
   ~CVRecorder() {
@@ -141,6 +150,24 @@ class CVRecorder {
     cv_out_.SetVoltage(v);
   }
 
+  // FIXME: Needs comment
+  inline void ResetOrForceResetPlayIndex(bool force_reset) {
+    if (play_index_ < 0 ||
+	(force_reset && play_index_increment_ < 0)) {
+      play_index_ =
+	recorded_length_ > abs(play_index_increment_) ?
+	recorded_length_ - 1 : first_sample_to_play_;
+      crossed_ = true;
+      return;
+    }
+    if (play_index_ >= recorded_length_ ||
+	(force_reset && play_index_increment_ >= 0)) {
+      play_index_ = first_sample_to_play_;
+      crossed_ = true;
+      return;
+    }
+  }
+
   // Emit a sample out and manage the circular buffer of samples,
   // taking its read direction into account.
   void OutSample() {
@@ -154,17 +181,7 @@ class CVRecorder {
     // Handler over- and under-flows. Set crossed_ to true when we
     // went over or under (so that the LED can be flashed to indicate
     // the start of a sequence.)
-    if (play_index_ < 0) {
-      play_index_ =
-	recorded_length_ > abs(play_index_increment_) ?
-	recorded_length_ - 1 : 0;
-      crossed_ = true;
-    } else {
-      if (play_index_ >= recorded_length_) {
-	play_index_ = 0;
-	crossed_ = true;
-      }
-    }
+    ResetOrForceResetPlayIndex(/* force_reset= */false);
   }
 
   // Write on the CV out what we're reading on the recording knob.
@@ -193,6 +210,20 @@ class CVRecorder {
       amplitude_ = amplitude;
       changed = true;
     }
+    // If the scrub knob has change, advance to the next sample that
+    // should be played and set the begining of the sequence to that
+    // value.
+    float scrub;
+    if (scrub_knob_.GetCalibratedValueAndIndicateChange(&scrub)) {
+      first_sample_to_play_ = scrub * recorded_length_;
+      if (first_sample_to_play_ < 0) {
+	first_sample_to_play_ = 0;
+      }
+      if (first_sample_to_play_ >= recorded_length_ - play_index_increment_) {
+	first_sample_to_play_ = recorded_length_ - play_index_increment_;
+      }
+    }
+
     // If the speed knob has changed, map its value to the number of
     // samples we skip in order to loop faster through the buffer.
     float index_increment;
@@ -204,16 +235,12 @@ class CVRecorder {
       }
       play_index_increment_changed = true;
     }
-    // If the trigger was activated, move the reading head at the
-    // beginning of the buffer (which is direction dependent.)
-    if (trigger_.Trig()) {
-      if (play_index_increment_ > 0) {
-	play_index_ = 0;
-      } else {
-	play_index_ = (recorded_length_ > abs(play_index_increment_) ?
-		       recorded_length_ - 1 : 0);
-      }
-      crossed_ = true;
+    // If the trigger was activated and changed state, move the
+    // reading head at the beginning of the buffer (which is direction
+    // dependent.)
+    Gate_::State state;		// FIXME, namespace
+    if (trigger_.GetStateIfChange(&state) && state == Gate_::ON) {
+      ResetOrForceResetPlayIndex(/* force_reset= */true);
     }
     // If we registered a change, print some debug information and if
     // we moved back to playing at normal forward speed, blink the led
@@ -246,8 +273,9 @@ class CVRecorder {
     LOG_INFO("sample_rate_: %d, buffer_size_: %d, "
 	     "record_index_: %d, recorded_length_: %d",
 	     sample_rate_, buffer_size_, record_index_, recorded_length_);
-    LOG_INFO("play_index_increment_; %d, amplitude_: %s",
+    LOG_INFO("play_index_increment_: %d, amplitude_: %s",
 	     play_index_increment_, f2a(amplitude_));
+    LOG_INFO("first_sample_to_play_: %d", first_sample_to_play_);
     LOG_INFO("time recorded: %s [ms]", f2a(RecordLengthInMilliseconds()));
     if (abreviated) {
       return;
@@ -268,6 +296,7 @@ class CVRecorder {
   int32_t record_index_;	 // Where are in recording
   int play_index_;		 // Next sample to play
   int32_t play_index_increment_; // Offset to the next sample to play
+  int32_t first_sample_to_play_; // Offset to the first sample to play
   int32_t recorded_length_;      // Index of the last sampled value
   float amplitude_;              // Amplitute multiplier
   bool crossed_;                 // True when reading went over/under
@@ -275,12 +304,15 @@ class CVRecorder {
   Knob recording_knob_;          // Knob providing input when recording
   Knob amplitude_knob_;          // Knob to change amplitude during playback
 
+  Knob scrub_knob_;		 // Knob setting the replay offset
   Knob speed_knob_;              // Knob to change playback speed/direction
   Transcaler speed_backward_;    // Map speed knob values to bwd playback speed
   Transcaler speed_forward_;     // Map speed knob values to fwd playback speed
   
   CVOut cv_out_;		 // Where samples will be output
-  GateIn trigger_;		 // When triggered, force play from start.
+  InGate trigger_;               // When triggered, force play from start.
+
+  bool debug_;			 // Set components in debug mode
 };
 
 #endif //  CVRECORDER_H
