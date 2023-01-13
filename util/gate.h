@@ -7,7 +7,7 @@
 #include "hid/gatein.h"
 
 class Gate_ {
- public:  
+ public:
   enum State {
     ON,
     OFF,
@@ -44,7 +44,7 @@ protected:
     }
     return state_;
   }
-  
+
   int32_t gate_index_;
   uint32_t last_transition_time_;
   State state_;
@@ -83,6 +83,15 @@ class InGate : public Gate_ {
       return UNKNOWN;
     }
     return AdjustInternalState(gate_.State() ? ON : OFF);
+  }
+
+  bool GetStateIfChange(State *new_state) {
+    *new_state = gate_.State() ? ON : OFF;
+    if (*new_state != state_) {
+      AdjustInternalState(*new_state);
+      return true;
+    }
+    return false;
   }
   
   void Print() {
