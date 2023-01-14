@@ -97,23 +97,23 @@ knob #2 and speed/direction of the replay with knob #4.
 
 - The CV sequence you recorded will start to be played immediately on
   CV1 out. The LED will flash each time a sequence starts. Knob #2
-  controls the amplitude of the replayed CV sequence and knob #4 the
-  speed (1x to 4x forward or backward) of the replay. Turn the knob #4
-  CC to play forward (noon position is 1x, the LED will flash briefly
-  when you're at 1x) and CCW to play backward.
+  controls the amplitude of the replayed CV sequence. Knob #3 allows
+  you to advance to start of the replay in the recorded sequence and
+  knob #4 the speed (1x to 4x forward or backward) of the replay. Turn
+  the knob #4 CC to play forward (noon position is 1x, the LED will
+  flash briefly when you're at 1x) and CCW to play backward.
 
   The CV sequence can also be restarted by applying a positive gate
   signal to the input gate #1.
+
+![](cvrecorder.png)
 
 Left TODO:
 
 - Gate out on sequence start
 
-- Use knob #3 to offset the start of a replay
-
-- Use the toggle to switch from continuous replay to triggered only
-  replay (the replay trigger will be a Gate 1 input or the push
-  button.)
+- Use the toggle to switch to pick which wave is recorded and knob #1
+  is then used to mix between the two wave forms.
 
 
 
