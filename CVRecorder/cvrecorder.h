@@ -109,6 +109,7 @@ class CVRecorder {
     // Triggering gate is gate #1
     trigger_ = CreateInGate1();
     trigger_.Init();
+    gate_out_.Init();
     
     const size_t num_bytes = buffer_size_ * sizeof(float);
     cv_samples_ = static_cast<float *>(malloc(num_bytes));
@@ -250,24 +251,32 @@ class CVRecorder {
     if (trigger_.GetStateIfChange(&state) && state == Gate_::ON) {
       ResetOrForceResetPlayIndex(/* force_reset= */true);
     }
-    // If we registered a change, print some debug information and if
-    // we moved back to playing at normal forward speed, blink the led
-    // twice.)
-    if (changed) {
-      Print(true);
-    }
-    if (play_index_increment_ == 1 && play_index_increment_changed) {
-      LED led;
-      led.BlockBlink(3, 20);
-    }
     // if we crossed the end of buffer boundary (direction dependant)
-    // during playback, blink the light briefly twice. Only do that
-    // when we have data in the buffer.
+    // during playback and there's data in the buffer:
+    //
+    //   - blink the light briefly twice
+    //   - Arm a 5ms pulse on the first gate out
     if (crossed_ &&
 	recorded_length_ > 0 &&
 	current_state == State::StateValue::PLAYBACK) {
+      gate_out_.ArmPulse(5);
+      // Blinking the LED is going to be blocking so update the
+      // pulse now
+      gate_out_.UpdatePulse();
       LED led;
       led.BlockBlink(1, 25);
+    }
+    gate_out_.UpdatePulse();
+    // If we registered a change, print some abreviated debug
+    // information
+    if (changed) {
+      Print(true);
+    }
+    // If we moved back to playing at normal forward speed, blink the
+    // led twice.
+    if (play_index_increment_ == 1 && play_index_increment_changed) {
+      LED led;
+      led.BlockBlink(3, 20);
     }
     crossed_ = false;
   }
@@ -319,6 +328,7 @@ class CVRecorder {
   
   CVOut cv_out_;		 // Where samples will be output
   InGate trigger_;               // When triggered, force play from start.
+  OutGate gate_out_;		 // Emits a signal on sequence start (replay)
 
   bool debug_;			 // Set components in debug mode
 };
