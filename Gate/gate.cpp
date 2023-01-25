@@ -4,6 +4,12 @@
 #include "util.h"
 #include "gate.h"
 
+// Define ALTERNATE to generate a square wave of a period of 20ms (5ms
+// up) or 100 Hz. Otherwise, you get a 20ms pulse with a rest time of
+// 1ms
+//
+// #define ALTERNATE
+
 int main(void) {
   InitHardware(true);
 
@@ -12,13 +18,24 @@ int main(void) {
   
   out_gate.SetDebug();
   out_gate.Init();
-  in_gate.SetDebug();
   in_gate.Init();
+
+  bool driver_off = true;
   
   while(true) {
-    out_gate.Alternate(500);
-    out_gate.Print();
+#ifdef ALTERNATE
+    out_gate.Alternate(20);
+    // in_gate in debug mode so the state is printed...
     in_gate.GetState();
-    System::Delay(50);
+#else
+    if (in_gate.GetState() == Gate_::ON && driver_off) {
+      out_gate.ArmPulse(20);
+      driver_off = false;
+    }
+    if (in_gate.GetState() == Gate_::OFF) {
+      driver_off = true;
+    }
+    out_gate.UpdatePulse();
+#endif
   }
 }  
