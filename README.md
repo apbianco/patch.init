@@ -110,10 +110,8 @@ knob #2 and speed/direction of the replay with knob #4.
 
 Left TODO:
 
-- Gate out on sequence start
-
-- Use the toggle to switch to pick which wave is recorded and knob #1
-  is then used to mix between the two wave forms.
+- Use the toggle to switch between looping and only being triggered on
+  input gate #1.
 
 
 
