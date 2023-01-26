@@ -26,6 +26,14 @@ class ToggleSwitch {
     return state_;
   }
 
+  bool IsUp() {
+    return GetState() == UP;
+  }
+
+  bool IsDown() {
+    return GetState() == DOWN;
+  }
+
   void Print() {
     LOG_INFO("ToggleSwitch position: %s", StateName(state_));
   }
