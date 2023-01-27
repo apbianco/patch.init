@@ -1,12 +1,13 @@
 #ifndef CVRECORDER_H
 #define CVRECORDER_H
 
-#include "util.h"
-#include "knobs.h"
-#include "transcaler.h"
 #include "cv.h"
-#include "led.h"
 #include "gate.h"
+#include "knobs.h"
+#include "led.h"
+#include "toggle_switch.h"
+#include "transcaler.h"
+#include "util.h"
 
 // An instance of this class is used to keep track of the state of the
 // application. A method exists to advance to a new state, remembering
@@ -83,7 +84,7 @@ class CVRecorder {
     buffer_size_(sample_rate * seconds),
     record_index_(0),
     play_index_increment_(1), first_sample_to_play_(0), recorded_length_(0),
-    amplitude_(1.0f), crossed_(false),
+    amplitude_(1.0f), crossed_(false), dont_play_(false),
     recording_knob_(CreateKnob1()), amplitude_knob_(CreateKnob2()),
     scrub_knob_(CreateKnob3()), speed_knob_(CreateKnob4()),
     speed_backward_(Transcaler(0.0f, 0.5f, -9.0f, -1.0f)),
@@ -99,6 +100,7 @@ class CVRecorder {
     recorded_length_ = 0;
     amplitude_ = 1.0f;
     crossed_ = false;
+    dont_play_ = toggle_.IsUp();
     const size_t num_bytes = buffer_size_ * sizeof(float);
     memset(cv_samples_, 0, num_bytes);
   }
@@ -110,6 +112,7 @@ class CVRecorder {
     trigger_ = CreateInGate1();
     trigger_.Init();
     gate_out_.Init();
+    toggle_.Init();
     
     const size_t num_bytes = buffer_size_ * sizeof(float);
     cv_samples_ = static_cast<float *>(malloc(num_bytes));
@@ -183,6 +186,11 @@ class CVRecorder {
     if (cv_samples_ == nullptr) {
       LOG_FATAL("Init() hasn't been called");
     }
+    // We might have been asked not to play on this call. This happens
+    // when the toggle is up and no gate signal has been received.
+    if (dont_play_) {
+      return;
+    }
     // Set the voltage out.
     cv_out_.SetVoltage(amplitude_ * cv_samples_[play_index_]);
     // Point to the next sample to play
@@ -244,12 +252,24 @@ class CVRecorder {
       }
       play_index_increment_changed = true;
     }
-    // If the trigger was activated and changed state, move the
-    // reading head at the beginning of the buffer (which is direction
-    // dependent.)
+    // If the toggle is up and we crossed, we stop playing.
+    if (toggle_.IsUp() && crossed_) {
+      dont_play_ = true;
+    }
+    // This can be immediately overriden by the toggle being pulled
+    // down
+    if (toggle_.IsDown()) {
+      dont_play_ = false;
+    }
+    // If the toggle is up and the trigger was activated and changed
+    // state, move the reading head at the beginning of the buffer
+    // (which is direction dependent) and indicate that playing should
+    // happen.
     Gate_::State state;		// FIXME, namespace
-    if (trigger_.GetStateIfChange(&state) && state == Gate_::ON) {
+    if (toggle_.IsUp() &&
+	trigger_.GetStateIfChange(&state) && state == Gate_::ON) {
       ResetOrForceResetPlayIndex(/* force_reset= */true);
+      dont_play_ = false;
     }
     // if we crossed the end of buffer boundary (direction dependant)
     // during playback and there's data in the buffer:
@@ -317,6 +337,7 @@ class CVRecorder {
   int32_t recorded_length_;      // Index of the last sampled value
   float amplitude_;              // Amplitute multiplier
   bool crossed_;                 // True when reading went over/under
+  bool dont_play_;		 // True when playback should stop
   
   Knob recording_knob_;          // Knob providing input when recording
   Knob amplitude_knob_;          // Knob to change amplitude during playback
@@ -329,6 +350,7 @@ class CVRecorder {
   CVOut cv_out_;		 // Where samples will be output
   InGate trigger_;               // When triggered, force play from start.
   OutGate gate_out_;		 // Emits a signal on sequence start (replay)
+  ToggleSwitch toggle_;		 // Up: replay on trigger. Down: loop.
 
   bool debug_;			 // Set components in debug mode
 };
