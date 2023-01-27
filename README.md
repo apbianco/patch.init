@@ -110,8 +110,7 @@ knob #2 and speed/direction of the replay with knob #4.
 
 Left TODO:
 
-- Use the toggle to switch between looping and only being triggered on
-  input gate #1.
+- Use CV to supplement the knobs
 
 
 
