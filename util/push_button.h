@@ -38,6 +38,8 @@ public:
   }
 
   void SetDebug() { debug_ = true; }
+
+  void ForceStateOff() { ForceState(OFF); }
   
   void UpdateState() {
     switch_.Debounce();
@@ -124,6 +126,13 @@ private:
   float time_pressed_ms_;
   LED *led_;
   bool debug_;
+
+  void ForceState(StateValue state) {
+    state_ = state;
+    long_press_ = false;
+    internal_state_ = RELEASED;
+    time_pressed_ms_ = 0.0;
+  }
 
   void LogDebug(const char *prefix) {
     if (debug_) {
