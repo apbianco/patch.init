@@ -52,7 +52,6 @@ int main(void) {
   global_cvrecorder.Print();
 
   OnOffPushButton button;
-  OnOffPushButton::State button_state;
 
   LED led;
   led.BlockBlink(3);
@@ -61,13 +60,13 @@ int main(void) {
   bool report_cpu_load = false;
   
   while(true) {
+    OnOffPushButton::State button_state;
     auto state = global_state.GetState();
     global_cvrecorder.ReadKnobsAdjustParameters(state);
     switch (state) {
     case State::StateValue::PLAYBACK:
       if (button.GetStateIfChanged(&button_state)) {
-	if (button_state.state == OnOffPushButton::StateValue::ON &&
-	    button_state.long_press) {
+	if (button_state.long_press) {
 	  global_state.AdvanceTo(State::StateValue::RECORD_WAITING_PRESS);
 	}
       }
