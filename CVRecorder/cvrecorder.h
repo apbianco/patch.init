@@ -206,6 +206,12 @@ class CVRecorder {
     cv_out_.SetVoltage(amplitude_ * recording_knob_.GetCalibratedValue());
   }
 
+  // Force a reset and indicate the we should play.
+  void ForceResetAndForcePlay() {
+    ResetOrForceResetPlayIndex(/* force_reset= */true);
+    dont_play_ = false;
+  }
+
   // Reads all knobs are adjust the parameters conditionning how the
   // circular buffer data is read. Read the first input gate and when
   // the gate as triggered configure the circular buffer to start
@@ -227,7 +233,7 @@ class CVRecorder {
       amplitude_ = amplitude;
       changed = true;
     }
-    // If the scrub knob has change, advance to the next sample that
+    // If the scrub knob has changed, advance to the next sample that
     // should be played and set the begining of the sequence to that
     // value.
     float scrub;
@@ -242,7 +248,8 @@ class CVRecorder {
     }
 
     // If the speed knob has changed, map its value to the number of
-    // samples we skip in order to loop faster through the buffer.
+    // samples we skip in order to loop faster through the buffer
+    // (either playing forward or backward.)
     float index_increment;
     if (speed_knob_.GetCalibratedValueAndIndicateChange(&index_increment)) {
       if (index_increment >= 0.5f) {
@@ -268,10 +275,9 @@ class CVRecorder {
     Gate_::State state;		// FIXME, namespace
     if (toggle_.IsUp() &&
 	trigger_.GetStateIfChange(&state) && state == Gate_::ON) {
-      ResetOrForceResetPlayIndex(/* force_reset= */true);
-      dont_play_ = false;
+      ForceResetAndForcePlay();
     }
-    // if we crossed the end of buffer boundary (direction dependant)
+    // If we crossed the end of buffer boundary (direction dependant)
     // during playback and there's data in the buffer:
     //
     //   - blink the light briefly twice
